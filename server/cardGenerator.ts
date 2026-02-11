@@ -99,28 +99,17 @@ export class CardGenerator extends EventEmitter {
           logoBase64 = imageToBase64(logoPath);
         }
 
-        const cupomTexto = upper(row.cupom);
-        const cupomLength = cupomTexto.length;
+        // 🔥 REGRA DOS 22 CARACTERES
+        let cupomTexto = upper(row.cupom);
 
-        let cupomFontSize = 160;
-
-        if (cupomLength > 12 && cupomLength <= 16) {
-          cupomFontSize = 130;
-        } else if (cupomLength > 16 && cupomLength <= 20) {
-          cupomFontSize = 110;
-        } else if (cupomLength > 20) {
-          cupomFontSize = 90;
+        if (cupomTexto.length > 22) {
+          cupomTexto = "XXXXX";
         }
 
         html = html.replaceAll("{{LOGO}}", logoBase64);
         html = html.replaceAll("{{TEXTO}}", upper(row.texto));
         html = html.replaceAll("{{VALOR}}", upper(row.valor));
-
-        html = html.replace(
-          '<div class="cupom-codigo upper">{{CUPOM}}</div>',
-          `<div class="cupom-codigo upper" style="font-size:${cupomFontSize}px; white-space:nowrap; text-align:center;">${cupomTexto}</div>`
-        );
-
+        html = html.replaceAll("{{CUPOM}}", cupomTexto);
         html = html.replaceAll("{{LEGAL}}", upper(row.legal));
         html = html.replaceAll("{{UF}}", upper(row.uf));
         html = html.replaceAll("{{SEGMENTO}}", upper(row.segmento));
