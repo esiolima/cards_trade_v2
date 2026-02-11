@@ -42,18 +42,18 @@ export default function CardGenerator() {
     });
 
     socketRef.current = socket;
-
-    return () => {
-      socket.disconnect();
-    };
+    return () => socket.disconnect();
   }, [sessionId]);
 
-  /* =======================
+  /* =========================
      UPLOAD LOGO
-  ======================== */
+  ========================= */
 
   const handleLogoUpload = async () => {
     if (!logoFile) return;
+
+    setLogoMessage(null);
+    setError(null);
 
     try {
       const formData = new FormData();
@@ -73,16 +73,21 @@ export default function CardGenerator() {
     }
   };
 
-  /* =======================
+  /* =========================
      UPLOAD PLANILHA
-  ======================== */
+  ========================= */
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (!selectedFile) return;
 
     if (!selectedFile.name.endsWith(".xlsx")) {
-      setError("Selecione um arquivo .xlsx válido");
+      setError("Por favor, selecione um arquivo .xlsx válido");
+      return;
+    }
+
+    if (selectedFile.size > 10 * 1024 * 1024) {
+      setError("O arquivo não pode exceder 10MB");
       return;
     }
 
@@ -94,12 +99,14 @@ export default function CardGenerator() {
 
   const handleUpload = async () => {
     if (!file) {
-      setError("Selecione um arquivo");
+      setError("Por favor, selecione um arquivo");
       return;
     }
 
     setIsProcessing(true);
     setError(null);
+    setProgress(null);
+    setZipPath(null);
 
     try {
       const formData = new FormData();
@@ -109,6 +116,10 @@ export default function CardGenerator() {
         method: "POST",
         body: formData,
       });
+
+      if (!uploadResponse.ok) {
+        throw new Error("Erro ao fazer upload do arquivo");
+      }
 
       const { filePath } = await uploadResponse.json();
 
@@ -121,7 +132,7 @@ export default function CardGenerator() {
         setZipPath(result.zipPath);
       }
     } catch (err) {
-      setError("Erro ao processar arquivo");
+      setError(err instanceof Error ? err.message : "Erro ao processar arquivo");
     } finally {
       setIsProcessing(false);
     }
@@ -133,17 +144,22 @@ export default function CardGenerator() {
     const response = await fetch(`/api/download?zipPath=${encodeURIComponent(zipPath)}`);
     const blob = await response.blob();
     const url = window.URL.createObjectURL(blob);
+
     const a = document.createElement("a");
     a.href = url;
     a.download = "cards.zip";
+    document.body.appendChild(a);
     a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
   };
 
-  const bgColor = isDark ? "bg-slate-950" : "bg-white";
+  const bgColor = isDark ? "bg-slate-950" : "bg-gradient-to-br from-slate-50 to-blue-50";
   const cardBg = isDark ? "bg-slate-900" : "bg-white";
   const textPrimary = isDark ? "text-white" : "text-slate-900";
   const textSecondary = isDark ? "text-slate-300" : "text-slate-600";
   const borderColor = isDark ? "border-slate-700" : "border-slate-200";
+  const accentColor = isDark ? "text-blue-400" : "text-blue-600";
 
   return (
     <div className={`min-h-screen py-12 px-4 ${bgColor}`}>
@@ -167,59 +183,48 @@ export default function CardGenerator() {
             onClick={() => setIsDark(!isDark)}
             className="p-3 rounded-full bg-slate-800 text-yellow-400"
           >
-            {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            {isDark ? <Sun size={18} /> : <Moon size={18} />}
           </button>
         </div>
 
         {/* GRID ORIGINAL RESTAURADO */}
         <div className="grid lg:grid-cols-3 gap-8">
 
-          {/* COLUNA ESQUERDA (ORIGINAL INTACTA) */}
+          {/* COLUNA ESQUERDA ORIGINAL */}
           <div className="lg:col-span-2">
-            <div className={`${cardBg} rounded-2xl p-8 border ${borderColor}`}>
+            <div className={`${cardBg} rounded-2xl p-8 shadow-xl border ${borderColor}`}>
 
-              <div
-                onClick={() => document.getElementById("file-input")?.click()}
-                className="border-2 border-dashed rounded-xl p-12 text-center cursor-pointer"
-              >
-                <Upload className="mx-auto mb-4 w-8 h-8 text-blue-400" />
-                <p className={`font-semibold ${textPrimary}`}>
-                  Clique ou arraste sua planilha
-                </p>
+              <div className="space-y-6">
+
+                <h2 className={`text-2xl font-bold ${textPrimary}`}>
+                  Transforme suas Planilhas
+                </h2>
+
                 <input
-                  id="file-input"
                   type="file"
                   accept=".xlsx"
                   onChange={handleFileChange}
-                  className="hidden"
+                  className="w-full"
                 />
-              </div>
 
-              {file && (
                 <Button
                   onClick={handleUpload}
-                  className="w-full mt-6 bg-blue-600 text-white"
+                  disabled={!file || isProcessing}
+                  className="w-full bg-blue-600 text-white"
                 >
                   Processar Planilha
                 </Button>
-              )}
 
-              {zipPath && (
-                <Button
-                  onClick={handleDownload}
-                  className="w-full mt-6 bg-green-600 text-white"
-                >
-                  Baixar Cards
-                </Button>
-              )}
-
+                {error && (
+                  <p className="text-red-500 text-sm">{error}</p>
+                )}
+              </div>
             </div>
           </div>
 
-          {/* COLUNA DIREITA */}
+          {/* COLUNA DIREITA ORIGINAL + BLOCO NOVO */}
           <div className="space-y-4">
 
-            {/* Download Fácil */}
             <div className={`${cardBg} rounded-xl p-5 border ${borderColor}`}>
               <h3 className={`font-semibold ${textPrimary}`}>
                 Download Fácil
@@ -229,46 +234,40 @@ export default function CardGenerator() {
               </p>
             </div>
 
-            {/* NOVO BLOCO - UPLOAD LOGO */}
+            {/* BLOCO ADICIONADO CORRETAMENTE */}
             <div className={`${cardBg} rounded-xl p-5 border ${borderColor}`}>
-              <div className="flex items-start space-x-3">
-                <ImagePlus className="w-6 h-6 text-blue-400" />
-                <div className="w-full">
-                  <h3 className={`font-semibold ${textPrimary}`}>
-                    Upload de Logo do Fornecedor
-                  </h3>
+              <h3 className={`font-semibold ${textPrimary} mb-2`}>
+                Upload de Logo do Fornecedor
+              </h3>
 
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => setLogoFile(e.target.files?.[0] || null)}
-                    className="w-full mt-2 text-sm"
-                  />
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setLogoFile(e.target.files?.[0] || null)}
+                className="w-full text-sm"
+              />
 
-                  {logoFile && (
-                    <Button
-                      onClick={handleLogoUpload}
-                      className="w-full mt-3 bg-blue-600 text-white"
-                    >
-                      Enviar Logo
-                    </Button>
-                  )}
+              {logoFile && (
+                <Button
+                  onClick={handleLogoUpload}
+                  className="w-full mt-3 bg-blue-600 text-white"
+                >
+                  Enviar Logo
+                </Button>
+              )}
 
-                  {logoMessage && (
-                    <p className="text-green-500 text-sm mt-2">
-                      {logoMessage}
-                    </p>
-                  )}
-                </div>
-              </div>
+              {logoMessage && (
+                <p className="text-green-500 text-sm mt-2">
+                  {logoMessage}
+                </p>
+              )}
             </div>
 
           </div>
         </div>
 
-        {/* FOOTER */}
         <div className="mt-16 pt-8 border-t text-center">
-          <p className="text-sm text-slate-400">
+          <p className={`text-sm ${textSecondary}`}>
             Desenvolvido por Esio Lima - Versão 1.0
           </p>
         </div>
