@@ -6,16 +6,6 @@ import fs from "fs";
 const UPLOAD_DIR = path.resolve("uploads");
 const LOGOS_DIR = path.resolve("logos");
 
-// Ensure upload directory exists
-if (!fs.existsSync(UPLOAD_DIR)) {
-  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-}
-
-// Ensure logos directory exists
-if (!fs.existsSync(LOGOS_DIR)) {
-  fs.mkdirSync(LOGOS_DIR, { recursive: true });
-}
-
 /* =========================
    UPLOAD PLANILHA (.xlsx)
 ========================= */
@@ -33,7 +23,7 @@ const excelStorage = multer.diskStorage({
 
 const uploadExcel = multer({
   storage: excelStorage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     if (!file.originalname.endsWith(".xlsx")) {
       return cb(new Error("Only .xlsx files are allowed"));
@@ -43,22 +33,22 @@ const uploadExcel = multer({
 });
 
 /* =========================
-   UPLOAD LOGO (IMAGENS)
+   UPLOAD LOGO (SEM ALTERAR NOME)
 ========================= */
 
 const logoStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, LOGOS_DIR);
+    cb(null, LOGOS_DIR); // usa pasta existente
   },
   filename: (req, file, cb) => {
-    // Salva com nome original em lowercase
-    cb(null, file.originalname.toLowerCase());
+    // salva exatamente com nome original
+    cb(null, file.originalname);
   },
 });
 
 const uploadLogo = multer({
   storage: logoStorage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB para imagem
+  limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const allowedTypes = [
       "image/png",
@@ -95,7 +85,7 @@ export function setupUploadRoute(app: express.Application) {
     }
   );
 
-  // Upload logo
+  // Upload logo (nome original preservado)
   app.post(
     "/api/upload-logo",
     uploadLogo.single("logo"),
@@ -130,22 +120,6 @@ export function setupUploadRoute(app: express.Application) {
       return res.status(404).json({ error: "File not found" });
     }
 
-    res.download(resolvedPath, "cards.zip", (err) => {
-      if (err) {
-        console.error("Download error:", err);
-      }
-
-      // Cleanup uploads folder
-      if (fs.existsSync(UPLOAD_DIR)) {
-        const files = fs.readdirSync(UPLOAD_DIR);
-        for (const file of files) {
-          try {
-            fs.unlinkSync(path.join(UPLOAD_DIR, file));
-          } catch {
-            // Ignore cleanup errors
-          }
-        }
-      }
-    });
+    res.download(resolvedPath, "cards.zip");
   });
 }
