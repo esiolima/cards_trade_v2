@@ -55,7 +55,6 @@ body {
 
 .logo {
   margin-top: 90px;
-  flex-shrink: 0;
 }
 .logo img {
   max-height: 320px;
@@ -69,22 +68,19 @@ body {
   font-size: clamp(36px, 5vw, 56px);
   font-weight: 400;
   line-height: 1.15;
-  flex-shrink: 0;
   text-align: center;
 }
 
-/* ===== BENEFÍCIO ===== */
 .percentual {
   display: flex;
   align-items: flex-end;
   justify-content: center;
   margin-top: -20px;
-  flex-shrink: 0;
 }
 
 .numero {
   font-weight: 900;
-  font-size: 540px; /* tamanho máximo fixo */
+  font-size: 540px;
   white-space: nowrap;
 }
 
@@ -98,20 +94,16 @@ body {
   margin-top: -100px;
   font-size: clamp(80px, 10vw, 120px);
   font-weight: 700;
-  flex-shrink: 0;
 }
 
 .legal {
   margin-top: 80px;
   max-width: 1100px;
   font-size: clamp(24px, 3vw, 36px);
-  font-weight: 400;
   line-height: 1.15;
-  flex-shrink: 0;
   text-align: center;
 }
 
-/* ===== CUPOM ===== */
 .cupom-box {
   margin-top: 40px;
   width: 1200px;
@@ -120,7 +112,6 @@ body {
   border-radius: 40px;
   display: grid;
   grid-template-columns: 180px 1fr;
-  flex-shrink: 0;
 }
 
 .cupom-label {
@@ -139,18 +130,19 @@ body {
 .cupom-codigo {
   display: flex;
   align-items: center;
-  justify-content: center; /* centralização horizontal */
-  font-size: 160px; /* tamanho máximo fixo */
+  justify-content: center;
+  font-size: 160px; /* tamanho máximo */
   font-weight: 900;
   color: #ffffff;
   white-space: nowrap;
+  padding: 0 20px;
+  width: 100%;
 }
 
 .rodape {
   margin-top: auto;
   margin-bottom: 60px;
   text-align: center;
-  flex-shrink: 0;
 }
 
 .uf {
@@ -161,7 +153,6 @@ body {
 .segmento-label {
   margin-top: 24px;
   font-size: clamp(24px, 3vw, 36px);
-  font-weight: 400;
 }
 
 .segmento-valor {
@@ -203,24 +194,25 @@ body {
 </div>
 
 <script>
-function autoFit(selector, maxSize) {
+function autoFit(selector, maxSize, minSize = 14) {
   const el = document.querySelector(selector);
   if (!el) return;
+
+  const container = el.parentElement;
+  const availableWidth = container.clientWidth - 40;
 
   let fontSize = maxSize;
   el.style.fontSize = fontSize + "px";
 
-  const maxWidth = el.parentElement.clientWidth - 20;
-
-  while (el.scrollWidth > maxWidth && fontSize > 40) {
-    fontSize -= 2;
+  while (el.scrollWidth > availableWidth && fontSize > minSize) {
+    fontSize -= 1;
     el.style.fontSize = fontSize + "px";
   }
 }
 
 window.onload = function() {
-  autoFit(".cupom-codigo", 160);
-  autoFit(".numero", 540);
+  autoFit(".cupom-codigo", 160, 14);
+  autoFit(".numero", 540, 60);
 };
 </script>
 
