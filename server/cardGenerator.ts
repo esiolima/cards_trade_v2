@@ -114,25 +114,34 @@ export class CardGenerator extends EventEmitter {
           waitUntil: "networkidle0",
         });
 
-        // 🔥 EXECUTA AUTO-SCALE DIRETAMENTE NO PUPPETEER
+        // 🔥 AUTO SCALE PROPORCIONAL DEFINITIVO
         await page.evaluate(() => {
-          function autoFit(selector: string, maxSize: number, minSize = 8) {
+          function autoFit(selector: string, maxSize: number, minSize = 6) {
             const el = document.querySelector(selector) as HTMLElement;
             if (!el) return;
 
             const container = el.parentElement as HTMLElement;
-            const availableWidth = container.clientWidth - 40;
 
-            let fontSize = maxSize;
-            el.style.fontSize = fontSize + "px";
+            el.style.whiteSpace = "nowrap";
+            el.style.fontSize = maxSize + "px";
 
-            while (el.scrollWidth > availableWidth && fontSize > minSize) {
-              fontSize -= 1;
-              el.style.fontSize = fontSize + "px";
+            const availableWidth =
+              container.getBoundingClientRect().width - 40;
+
+            const textWidth =
+              el.getBoundingClientRect().width;
+
+            if (textWidth > availableWidth) {
+              const ratio = availableWidth / textWidth;
+              let newSize = Math.floor(maxSize * ratio);
+
+              if (newSize < minSize) newSize = minSize;
+
+              el.style.fontSize = newSize + "px";
             }
           }
 
-          autoFit(".cupom-codigo", 160, 8);
+          autoFit(".cupom-codigo", 160, 6);
         });
 
         const ordem = String(row.ordem || processed + 1).trim();
@@ -154,6 +163,15 @@ export class CardGenerator extends EventEmitter {
 
         processed++;
         const percentage = Math.round((processed / total) * 100);
+
+        if (onProgress) {
+          onProgress({
+            total,
+            processed,
+            percentage,
+            currentCard: `${processed}/${total}`,
+          });
+        }
 
         this.emit("progress", {
           total,
