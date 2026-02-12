@@ -29,7 +29,7 @@ interface GenerationProgress {
   currentCard: string;
 }
 
-const upper = (v: string | undefined) => String(v || "").toUpperCase();
+const upper = (v: string | undefined) => String(v || "").toUpperCase().trim();
 
 function imageToBase64(imagePath: string): string {
   if (!fs.existsSync(imagePath)) return "";
@@ -41,7 +41,7 @@ function imageToBase64(imagePath: string): string {
 function normalizeType(tipo: string): string {
   if (!tipo) return "";
 
-  let normalized = String(tipo)
+  const normalized = tipo
     .toLowerCase()
     .trim()
     .normalize("NFD")
@@ -92,47 +92,36 @@ export class CardGenerator extends EventEmitter {
         const templatePath = path.join(TEMPLATES_DIR, `${tipo}.html`);
         let html = fs.readFileSync(templatePath, "utf8");
 
-        /* ========================
-           LOGO PADRÃO AUTOMÁTICO
-        ======================== */
-        let logoFileName = row.logo?.trim();
+        // ===== LOGO =====
+        let logoFile = row.logo?.trim();
 
-        if (!logoFileName) {
-          logoFileName = "blank.png";
+        if (!logoFile) {
+          logoFile = "blank.png";
         }
 
-        const logoPath = path.join(LOGOS_DIR, logoFileName);
+        const logoPath = path.join(LOGOS_DIR, logoFile.toLowerCase());
         const logoBase64 = imageToBase64(logoPath);
 
-        /* ========================
-           TRATAMENTO DO VALOR
-        ======================== */
+        // ===== VALOR =====
         let valorFinal = "";
 
-        const valorOriginal = String(row.valor || "").trim();
+        if (tipo === "promocao") {
+          // PROMO mantém exatamente o que foi digitado (apenas upper)
+          valorFinal = upper(row.valor);
+        } else {
+          // CUPOM, QUEDA, BC -> sempre garantir UM único %
+          let valorLimpo = String(row.valor || "")
+            .replace(/%/g, "") // remove qualquer %
+            .trim();
 
-        if (tipo === "cupom" || tipo === "queda" || tipo === "bc") {
-          if (!valorOriginal) {
-            console.error(`Erro: Valor vazio na linha ${processed + 1}`);
-          } else {
-            const numero = valorOriginal.replace("%", "").trim();
-
-            if (isNaN(Number(numero))) {
-              console.error(
-                `Erro: Valor inválido "${valorOriginal}" na linha ${processed + 1}`
-              );
-            } else {
-              valorFinal = `${numero}%`;
-            }
+          if (valorLimpo !== "") {
+            valorFinal = `${valorLimpo}%`;
           }
-        } else if (tipo === "promocao") {
-          valorFinal = upper(valorOriginal);
         }
 
-        /* ========================
-           CUPOM LIMITE 22 CARACTERES
-        ======================== */
+        // ===== CUPOM =====
         let cupomTexto = upper(row.cupom);
+
         if (cupomTexto.length > 22) {
           cupomTexto = "XXXXX";
         }
@@ -155,10 +144,6 @@ export class CardGenerator extends EventEmitter {
           waitUntil: "networkidle0",
         });
 
-        /* ========================
-           NOME DO ARQUIVO
-           ORDEM + TIPO
-        ======================== */
         const ordem = String(row.ordem || processed + 1).trim();
         const tipoUpper = tipo.toUpperCase();
 
@@ -228,19 +213,17 @@ export class CardGenerator extends EventEmitter {
 
   private cleanup() {
     if (fs.existsSync(TMP_DIR)) {
-      const files = fs.readdirSync(TMP_DIR);
-      for (const file of files) {
-        fs.unlinkSync(path.join(TMP_DIR, file));
-      }
+      fs.readdirSync(TMP_DIR).forEach((file) =>
+        fs.unlinkSync(path.join(TMP_DIR, file))
+      );
     }
 
     if (fs.existsSync(OUTPUT_DIR)) {
-      const files = fs.readdirSync(OUTPUT_DIR);
-      for (const file of files) {
+      fs.readdirSync(OUTPUT_DIR).forEach((file) => {
         if (file.endsWith(".pdf")) {
           fs.unlinkSync(path.join(OUTPUT_DIR, file));
         }
-      }
+      });
     }
   }
 
