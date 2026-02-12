@@ -28,13 +28,17 @@
 
 body {
   margin: 0;
-  background: #ffffff;
+  width: 1400px;
+  height: 2115px;
   display: flex;
   justify-content: center;
   align-items: center;
+  background: #ffffff;
   color: #1F3C6E;
-  font-family: Inter, sans-serif;
 }
+
+.upper { text-transform: uppercase; }
+.text-wrap { text-align: center; }
 
 /* CARD */
 .card {
@@ -48,9 +52,32 @@ body {
   align-items: center;
   padding: 0 40px;
   overflow: hidden;
+  position: relative;
 }
 
-/* ===== LOGO (COMUM) ===== */
+/* ===== SELO ===== */
+#selo-container {
+  position: absolute;
+  top: -20px;
+  left: 0;
+  width: 225px;
+  height: 225px;
+  z-index: 99999;
+  display: none;
+  align-items: flex-start;
+  justify-content: flex-start;
+  pointer-events: none;
+}
+
+#selo-container img {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+
+/* ===== LOGO ===== */
 .logo {
   margin-top: 90px;
   flex-shrink: 0;
@@ -92,32 +119,35 @@ body {
 /* ===== BENEFÍCIO ===== */
 .beneficio {
   margin-top: 140px;
-  text-align: center;
-  line-height: 1.05;
-  font-family: Inter, sans-serif;
-  font-weight: 900;
-  text-transform: uppercase;
+  width: 1200px;
+  height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
+}
+
+#beneficio-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 0 60px;
 }
 
 .beneficio-texto {
   font-family: Inter, sans-serif;
   font-weight: 900;
-  font-size: clamp(150px, 20vw, 240px);
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
+  font-size: 240px;
+  text-transform: uppercase;
+  text-align: center;
+  line-height: 1;
+  white-space: nowrap;
 }
 
-.beneficio-texto .percent {
-  font-family: Inter, sans-serif;
-  font-weight: 900;
-  font-size: clamp(150px, 20vw, 240px);
-  margin-left: 20px;
-  margin-bottom: -20px;
-}
-
-/* ===== LEGAL (COMUM) ===== */
+/* ===== LEGAL ===== */
 .legal {
   margin-top: 80px;
   max-width: 1100px;
@@ -130,7 +160,7 @@ body {
   flex-shrink: 0;
 }
 
-/* ===== RODAPÉ (COMUM) ===== */
+/* ===== RODAPÉ ===== */
 .rodape {
   margin-top: auto;
   margin-bottom: 60px;
@@ -166,9 +196,12 @@ body {
 <body>
 
   <div class="card">
+    <div id="selo-container">
+      <img src="{{SELO}}" id="selo-img" alt="">
+    </div>
 
     <div class="logo">
-      <img src="{{LOGO}}" alt="Logo do fornecedor">
+      <img src="{{LOGO}}" alt="Logo">
     </div>
 
     <div class="faixa-promocao">PROMOÇÃO</div>
@@ -178,7 +211,9 @@ body {
     </div>
 
     <div class="beneficio">
-      <div class="beneficio-texto">{{VALOR}}</div>
+      <div id="beneficio-container">
+        <div id="beneficio-texto" class="beneficio-texto">{{VALOR}}</div>
+      </div>
     </div>
 
     <div class="legal">
@@ -192,6 +227,45 @@ body {
     </div>
 
   </div>
+
+  <script>
+    function adjustFontSize() {
+      const container = document.getElementById('beneficio-container');
+      const text = document.getElementById('beneficio-texto');
+      if (!container || !text) return;
+      
+      let fontSize = 240;
+      const minFontSize = 40;
+
+      text.style.fontSize = fontSize + 'px';
+
+      while ((text.scrollWidth > container.offsetWidth || text.scrollHeight > container.offsetHeight) && fontSize > minFontSize) {
+        fontSize -= 5;
+        text.style.fontSize = fontSize + 'px';
+      }
+    }
+
+    function checkSelo() {
+      const seloImg = document.getElementById('selo-img');
+      const seloContainer = document.getElementById('selo-container');
+      const src = seloImg.getAttribute('src');
+      if (src && src.startsWith('data:image')) {
+        seloContainer.style.display = 'flex';
+      } else {
+        seloContainer.style.display = 'none';
+      }
+    }
+    
+    window.onload = () => {
+      adjustFontSize();
+      checkSelo();
+    };
+    
+    document.fonts.ready.then(() => {
+      adjustFontSize();
+      checkSelo();
+    });
+  </script>
 
 </body>
 </html>
