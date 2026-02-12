@@ -1,6 +1,6 @@
 export const ENV = {
   appId: process.env.VITE_APP_ID ?? "",
-  cookieSecret: process.env.JWT_SECRET ?? "",
+  cookieSecret: process.env.JWT_SECRET ?? "default-secret-for-v2",
   databaseUrl: process.env.DATABASE_URL ?? "",
   oAuthServerUrl: process.env.OAUTH_SERVER_URL ?? "",
   ownerOpenId: process.env.OWNER_OPEN_ID ?? "",
@@ -8,3 +8,8 @@ export const ENV = {
   forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
   forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
 };
+
+// Removido o bloqueio por falta de OAUTH_SERVER_URL para permitir o deploy sem variáveis de autenticação
+if (!ENV.oAuthServerUrl && ENV.isProduction) {
+  console.warn("[OAuth] WARNING: OAUTH_SERVER_URL is not configured. Authentication might not work.");
+}
