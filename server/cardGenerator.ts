@@ -7,6 +7,7 @@ import { EventEmitter } from "events";
 
 const TEMPLATES_DIR = path.resolve("templates");
 const LOGOS_DIR = path.resolve("logos");
+const SELOS_DIR = path.resolve("selos");
 const OUTPUT_DIR = path.resolve("output");
 const TMP_DIR = path.resolve("tmp");
 
@@ -20,6 +21,7 @@ interface CardData {
   legal?: string;
   uf?: string;
   segmento?: string;
+  selo?: string;
 }
 
 interface GenerationProgress {
@@ -110,6 +112,28 @@ export class CardGenerator extends EventEmitter {
         const logoBase64 = imageToBase64(logoPath);
 
         /* =========================
+           SELO (PNG baseado na coluna selo)
+        ========================= */
+        let seloBase64 = "";
+        const seloValue = upper(row.selo);
+        
+        if (seloValue) {
+          let seloFileName = "";
+          if (seloValue.includes("NOVA")) {
+            seloFileName = "acaonova.png";
+          } else if (seloValue.includes("RENOVADA")) {
+            seloFileName = "acaorenovada.png";
+          }
+
+          if (seloFileName) {
+            const seloPath = path.join(SELOS_DIR, seloFileName);
+            if (fs.existsSync(seloPath)) {
+              seloBase64 = imageToBase64(seloPath);
+            }
+          }
+        }
+
+        /* =========================
            VALOR (REMOVE % SEM ADICIONAR)
         ========================= */
 
@@ -148,6 +172,7 @@ export class CardGenerator extends EventEmitter {
         html = html.replaceAll("{{LEGAL}}", legalFinal);
         html = html.replaceAll("{{UF}}", ufFinal);
         html = html.replaceAll("{{SEGMENTO}}", segmentoFinal);
+        html = html.replaceAll("{{SELO}}", seloBase64);
 
         /* =========================
            GERAR PDF
