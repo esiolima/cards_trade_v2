@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from "react";
-import { Upload, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Upload, AlertCircle, CheckCircle2, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
+import { useNavigate } from "react-router-dom";
 
 interface Logo {
   name: string;
@@ -10,6 +11,8 @@ interface Logo {
 }
 
 export default function LogoManager() {
+  const navigate = useNavigate();
+
   const [logos, setLogos] = useState<Logo[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -20,6 +23,7 @@ export default function LogoManager() {
 
   const { data: logosData } = trpc.logo.listLogos.useQuery();
 
+  // Load logos
   useEffect(() => {
     if (logosData?.logos) {
       setLogos(logosData.logos);
@@ -44,11 +48,10 @@ export default function LogoManager() {
     setError(null);
     setSuccess(null);
 
-    const logoName = file.name;
-    const exists = logos.some((logo) => logo.name === logoName);
+    const exists = logos.some((logo) => logo.name === file.name);
 
     if (exists) {
-      setConfirmReplace({ file, name: logoName });
+      setConfirmReplace({ file, name: file.name });
     } else {
       uploadLogo(file);
     }
@@ -88,11 +91,22 @@ export default function LogoManager() {
 
   return (
     <div className="w-full max-w-4xl mx-auto p-6 space-y-6">
+
+      {/* BOTÃO VOLTAR */}
+      <Button
+        onClick={() => navigate("/")}
+        className="bg-slate-700 hover:bg-slate-600 text-white flex items-center gap-2"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        Voltar para Home
+      </Button>
+
       <Card className="p-6 bg-slate-900 border-slate-700">
         <h2 className="text-2xl font-bold text-white mb-4">
           Gerenciador de Logos
         </h2>
 
+        {/* Upload */}
         <div className="space-y-4">
           <div className="border-2 border-dashed border-slate-600 rounded-lg p-8 text-center hover:border-slate-500 transition">
             <Upload className="w-12 h-12 text-slate-400 mx-auto mb-4" />
@@ -118,6 +132,7 @@ export default function LogoManager() {
             </Button>
           </div>
 
+          {/* Erro */}
           {error && (
             <div className="flex items-center gap-2 p-4 bg-red-900/20 border border-red-700 rounded-lg text-red-300">
               <AlertCircle className="w-5 h-5" />
@@ -125,6 +140,7 @@ export default function LogoManager() {
             </div>
           )}
 
+          {/* Sucesso */}
           {success && (
             <div className="flex items-center gap-2 p-4 bg-green-900/20 border border-green-700 rounded-lg text-green-300">
               <CheckCircle2 className="w-5 h-5" />
@@ -132,6 +148,7 @@ export default function LogoManager() {
             </div>
           )}
 
+          {/* Confirmar substituição */}
           {confirmReplace && (
             <div className="p-4 bg-yellow-900/20 border border-yellow-700 rounded-lg space-y-4">
               <p className="text-yellow-300">
@@ -164,17 +181,18 @@ export default function LogoManager() {
         </div>
       </Card>
 
+      {/* Lista de Logos */}
       <Card className="p-6 bg-slate-900 border-slate-700">
         <h3 className="text-xl font-bold text-white mb-4">
           Logos Disponíveis
         </h3>
 
-        {logos.filter((logo) => logo.name !== "blank.png").length === 0 ? (
+        {logos.filter(l => l.name !== "blank.png").length === 0 ? (
           <p className="text-slate-400">Nenhum logo disponível</p>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {logos
-              .filter((logo) => logo.name !== "blank.png")
+              .filter(l => l.name !== "blank.png")
               .map((logo) => (
                 <div
                   key={logo.name}
@@ -185,8 +203,7 @@ export default function LogoManager() {
                     alt={logo.name}
                     className="w-full h-32 object-contain mb-2"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src =
-                        "/logos/blank.png";
+                      (e.target as HTMLImageElement).src = "/logos/blank.png";
                     }}
                   />
                   <p className="text-sm text-slate-300 truncate">
