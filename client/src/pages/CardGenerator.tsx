@@ -230,7 +230,7 @@ export default function CardGenerator() {
         {/* Rodapé Restaurado */}
         <div className={`mt-16 pt-8 border-t ${borderColor} text-center`}>
           <p className={`text-sm ${textSecondary}`}>
-            Desenvolvido por Esio Lima - Versão 1.0
+            Desenvolvido por Esio Lima - Versão 2.0
           </p>
         </div>
       </div>
