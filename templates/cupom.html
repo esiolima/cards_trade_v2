@@ -55,18 +55,18 @@ body {
   position: relative;
 }
 
-/* ===== SELO (AJUSTADO PARA PDF) ===== */
+/* ===== SELO (REDUZIDO E ALINHADO À BORDA) ===== */
 #selo-container {
   position: absolute;
   top: 0;
   left: 0;
-  width: 450px; /* Aumentado para maior visibilidade */
-  height: 450px;
-  z-index: 99999; /* Prioridade máxima */
-  display: none; /* Será alterado para flex via JS se houver imagem */
+  width: 225px; /* Reduzido 50% (era 450px) */
+  height: 225px; /* Reduzido 50% (era 450px) */
+  z-index: 99999;
+  display: none; /* Ativado via JS */
   align-items: flex-start;
   justify-content: flex-start;
-  pointer-events: none; /* Não interfere em cliques */
+  pointer-events: none;
 }
 
 #selo-container img {
@@ -264,7 +264,6 @@ body {
       const seloContainer = document.getElementById('selo-container');
       
       const src = seloImg.getAttribute('src');
-      // Verifica se o src contém dados reais (Base64)
       if (src && src.startsWith('data:image')) {
         seloContainer.style.display = 'flex';
       } else {
@@ -272,13 +271,11 @@ body {
       }
     }
     
-    // Executa as funções
     window.onload = () => {
       adjustFontSize();
       checkSelo();
     };
     
-    // Garante execução após carregamento de fontes e imagens
     document.fonts.ready.then(() => {
       adjustFontSize();
       checkSelo();
