@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Upload, Trash2, AlertCircle, CheckCircle2, ArrowLeft } from "lucide-react";
+import { Upload, AlertCircle, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
@@ -15,11 +15,9 @@ export default function LogoManager() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [confirmReplace, setConfirmReplace] = useState<{ file: File; name: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const deleteLogoMutation = trpc.logo.deleteLogo.useMutation();
   const { data: logosData } = trpc.logo.listLogos.useQuery();
 
   useEffect(() => {
@@ -88,45 +86,20 @@ export default function LogoManager() {
     }
   };
 
-  const handleDeleteLogo = async (logoName: string) => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      await deleteLogoMutation.mutateAsync({ logoName });
-      setSuccess(`Logo "${logoName}" deletado com sucesso!`);
-      setConfirmDelete(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao deletar logo");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
     <div className="w-full max-w-4xl mx-auto p-6 space-y-6">
-
-      {/* BOTÃO VOLTAR */}
-      <div>
-        <Button
-          onClick={() => window.location.href = "/"}
-          variant="outline"
-          className="flex items-center gap-2 border-slate-600 text-slate-300 hover:bg-slate-800"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Voltar
-        </Button>
-      </div>
-
       <Card className="p-6 bg-slate-900 border-slate-700">
-        <h2 className="text-2xl font-bold text-white mb-4">Gerenciador de Logos</h2>
+        <h2 className="text-2xl font-bold text-white mb-4">
+          Gerenciador de Logos
+        </h2>
 
         <div className="space-y-4">
           <div className="border-2 border-dashed border-slate-600 rounded-lg p-8 text-center hover:border-slate-500 transition">
             <Upload className="w-12 h-12 text-slate-400 mx-auto mb-4" />
             <p className="text-slate-300 mb-4">
-              Clique para selecionar um arquivo ou arraste aqui
+              Clique para selecionar um arquivo
             </p>
+
             <input
               ref={fileInputRef}
               type="file"
@@ -135,6 +108,7 @@ export default function LogoManager() {
               className="hidden"
               disabled={isLoading}
             />
+
             <Button
               onClick={() => fileInputRef.current?.click()}
               disabled={isLoading}
@@ -157,41 +131,72 @@ export default function LogoManager() {
               {success}
             </div>
           )}
+
+          {confirmReplace && (
+            <div className="p-4 bg-yellow-900/20 border border-yellow-700 rounded-lg space-y-4">
+              <p className="text-yellow-300">
+                O logo "{confirmReplace.name}" já existe. Deseja substituir?
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => uploadLogo(confirmReplace.file)}
+                  disabled={isLoading}
+                  className="bg-yellow-600 hover:bg-yellow-700"
+                >
+                  Sim, Substituir
+                </Button>
+                <Button
+                  onClick={() => {
+                    setConfirmReplace(null);
+                    if (fileInputRef.current) {
+                      fileInputRef.current.value = "";
+                    }
+                  }}
+                  disabled={isLoading}
+                  variant="outline"
+                  className="border-slate-600 text-slate-300"
+                >
+                  Cancelar
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </Card>
 
       <Card className="p-6 bg-slate-900 border-slate-700">
-        <h3 className="text-xl font-bold text-white mb-4">Logos Disponíveis</h3>
+        <h3 className="text-xl font-bold text-white mb-4">
+          Logos Disponíveis
+        </h3>
 
-        {logos.filter(logo => logo.name !== 'blank.png').length === 0 ? (
+        {logos.filter((logo) => logo.name !== "blank.png").length === 0 ? (
           <p className="text-slate-400">Nenhum logo disponível</p>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {logos.filter(logo => logo.name !== 'blank.png').map((logo) => (
-              <div
-                key={logo.name}
-                className="relative group bg-slate-800 rounded-lg p-4 hover:bg-slate-700 transition"
-              >
-                <img
-                  src={`/logos/${logo.name}`}
-                  alt={logo.name}
-                  className="w-full h-32 object-contain mb-2"
-                />
-                <p className="text-sm text-slate-300 truncate">{logo.name}</p>
-
-                <button
-                  onClick={() => setConfirmDelete(logo.name)}
-                  className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition bg-red-600 hover:bg-red-700 p-2 rounded"
-                  disabled={isLoading}
+            {logos
+              .filter((logo) => logo.name !== "blank.png")
+              .map((logo) => (
+                <div
+                  key={logo.name}
+                  className="bg-slate-800 rounded-lg p-4"
                 >
-                  <Trash2 className="w-4 h-4 text-white" />
-                </button>
-              </div>
-            ))}
+                  <img
+                    src={`/logos/${logo.name}`}
+                    alt={logo.name}
+                    className="w-full h-32 object-contain mb-2"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src =
+                        "/logos/blank.png";
+                    }}
+                  />
+                  <p className="text-sm text-slate-300 truncate">
+                    {logo.name}
+                  </p>
+                </div>
+              ))}
           </div>
         )}
       </Card>
-
     </div>
   );
 }
