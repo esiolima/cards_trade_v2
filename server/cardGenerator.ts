@@ -11,6 +11,7 @@ const OUTPUT_DIR = path.resolve("output");
 const TMP_DIR = path.resolve("tmp");
 
 interface CardData {
+  ordem?: string;
   tipo: string;
   logo: string;
   cupom?: string;
@@ -38,8 +39,11 @@ function imageToBase64(imagePath: string): string {
 }
 
 function normalizeType(tipo: string): string {
+  if (!tipo) return "";
+
   let normalized = String(tipo)
     .toLowerCase()
+    .trim()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
 
@@ -55,11 +59,9 @@ export class CardGenerator extends EventEmitter {
   private browser: Browser | null = null;
 
   async initialize() {
-    // Ensure directories exist
     if (!fs.existsSync(OUTPUT_DIR)) fs.mkdirSync(OUTPUT_DIR, { recursive: true });
     if (!fs.existsSync(TMP_DIR)) fs.mkdirSync(TMP_DIR, { recursive: true });
 
-    // Launch browser
     this.browser = await puppeteer.launch({
       args: ["--no-sandbox", "--disable-setuid-sandbox"],
       headless: true,
@@ -73,12 +75,10 @@ export class CardGenerator extends EventEmitter {
     if (!this.browser) throw new Error("Generator not initialized");
 
     try {
-      // Read Excel file
       const workbook = xlsx.readFile(excelFilePath);
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
       const rows = xlsx.utils.sheet_to_json<CardData>(sheet, { defval: "" });
 
-      // Filter valid rows
       const validRows = rows.filter((row) => {
         const tipo = normalizeType(row.tipo);
         return tipo && fs.existsSync(path.join(TEMPLATES_DIR, `${tipo}.html`));
@@ -87,41 +87,29 @@ export class CardGenerator extends EventEmitter {
       const total = validRows.length;
       let processed = 0;
 
-      // Generate PDFs
       for (const row of validRows) {
         const tipo = normalizeType(row.tipo);
         const templatePath = path.join(TEMPLATES_DIR, `${tipo}.html`);
         let html = fs.readFileSync(templatePath, "utf8");
 
-        // Replace placeholders
-        // Normalize logo filename to lowercase for case-insensitive matching
+        // LOGO
         let logoBase64 = "";
-        if (row.logo && row.logo.trim()) {
-          const logoFileName = row.logo.toLowerCase();
+        if (row.logo) {
+          const logoFileName = row.logo.toLowerCase().trim();
           const logoPath = path.join(LOGOS_DIR, logoFileName);
           logoBase64 = imageToBase64(logoPath);
-          
-          // If logo not found with lowercase, try to find any matching file
-          if (!logoBase64) {
-            const files = fs.readdirSync(LOGOS_DIR);
-            const matchingFile = files.find(f => f.toLowerCase() === logoFileName);
-            if (matchingFile) {
-              const altLogoPath = path.join(LOGOS_DIR, matchingFile);
-              logoBase64 = imageToBase64(altLogoPath);
-            }
-          }
         }
-        
-        // Use blank.png as default if no logo is found or specified
-        if (!logoBase64) {
-          const blankLogoPath = path.join(LOGOS_DIR, "blank.png");
-          logoBase64 = imageToBase64(blankLogoPath);
+
+        // REGRA 22 CARACTERES CUPOM
+        let cupomTexto = upper(row.cupom);
+        if (cupomTexto.length > 22) {
+          cupomTexto = "XXXXX";
         }
 
         html = html.replaceAll("{{LOGO}}", logoBase64);
         html = html.replaceAll("{{TEXTO}}", upper(row.texto));
         html = html.replaceAll("{{VALOR}}", upper(row.valor));
-        html = html.replaceAll("{{CUPOM}}", upper(row.cupom));
+        html = html.replaceAll("{{CUPOM}}", cupomTexto);
         html = html.replaceAll("{{LEGAL}}", upper(row.legal));
         html = html.replaceAll("{{UF}}", upper(row.uf));
         html = html.replaceAll("{{SEGMENTO}}", upper(row.segmento));
@@ -129,26 +117,25 @@ export class CardGenerator extends EventEmitter {
         const tmpHtmlPath = path.join(TMP_DIR, `card_${processed + 1}.html`);
         fs.writeFileSync(tmpHtmlPath, html, "utf8");
 
-        // Generate PDF
         const page = await this.browser.newPage();
         await page.setViewport({ width: 1400, height: 2115 });
 
         await page.goto(`file://${path.resolve(tmpHtmlPath)}`, {
-          waitUntil: "networkidle2",
-          timeout: 30000,
+          waitUntil: "networkidle0",
         });
 
-        const pdfPath = path.join(
-          OUTPUT_DIR,
-          `card_${String(processed + 1).padStart(3, "0")}.pdf`
-        );
+        // 🔥 NOME DO PDF BASEADO NA COLUNA ORDEM + TIPO
+        const ordem = String(row.ordem || processed + 1).trim();
+        const tipoUpper = tipo.toUpperCase();
+
+        const pdfFileName = `${ordem}_${tipoUpper}.pdf`;
+        const pdfPath = path.join(OUTPUT_DIR, pdfFileName);
 
         await page.pdf({
           path: pdfPath,
           width: "1400px",
           height: "2115px",
           printBackground: true,
-          pageRanges: "1",
         });
 
         await page.close();
@@ -173,13 +160,11 @@ export class CardGenerator extends EventEmitter {
         });
       }
 
-      // Create ZIP file
       const zipPath = path.join(OUTPUT_DIR, "cards.zip");
       await this.createZip(OUTPUT_DIR, zipPath);
 
       return zipPath;
     } finally {
-      // Cleanup
       this.cleanup();
     }
   }
@@ -194,12 +179,10 @@ export class CardGenerator extends EventEmitter {
 
       archive.pipe(output);
 
-      // Add all PDFs to zip
       const files = fs.readdirSync(sourceDir);
       for (const file of files) {
         if (file.endsWith(".pdf")) {
-          const filePath = path.join(sourceDir, file);
-          archive.file(filePath, { name: file });
+          archive.file(path.join(sourceDir, file), { name: file });
         }
       }
 
@@ -208,21 +191,10 @@ export class CardGenerator extends EventEmitter {
   }
 
   private cleanup() {
-    // Clean temporary HTML files
     if (fs.existsSync(TMP_DIR)) {
       const files = fs.readdirSync(TMP_DIR);
       for (const file of files) {
         fs.unlinkSync(path.join(TMP_DIR, file));
-      }
-    }
-
-    // Clean old PDFs from output (keep only the latest ZIP)
-    if (fs.existsSync(OUTPUT_DIR)) {
-      const files = fs.readdirSync(OUTPUT_DIR);
-      for (const file of files) {
-        if (file.endsWith(".pdf")) {
-          fs.unlinkSync(path.join(OUTPUT_DIR, file));
-        }
       }
     }
   }
