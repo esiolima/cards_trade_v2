@@ -28,13 +28,10 @@
 
 body {
   margin: 0;
-  width: 1400px;
-  height: 2115px;
+  background: transparent;
   display: flex;
   justify-content: center;
   align-items: center;
-  background: #ffffff;
-  color: #1F3C6E;
 }
 
 .upper { text-transform: uppercase; }
@@ -52,35 +49,11 @@ body {
   align-items: center;
   padding: 0 40px;
   overflow: hidden;
-  position: relative;
-}
-
-/* ===== SELO (AJUSTADO PARA COLAR NO TOPO) ===== */
-#selo-container {
-  position: absolute;
-  top: -20px; /* Valor negativo para subir e colar na linha dourada */
-  left: 0;
-  width: 225px;
-  height: 225px;
-  z-index: 99999;
-  display: none;
-  align-items: flex-start;
-  justify-content: flex-start;
-  pointer-events: none;
-}
-
-#selo-container img {
-  max-width: 100%;
-  max-height: 100%;
-  width: auto;
-  height: auto;
-  object-fit: contain;
 }
 
 /* ===== LOGO ===== */
 .logo {
   margin-top: 90px;
-  flex-shrink: 0;
 }
 .logo img {
   max-height: 320px;
@@ -92,58 +65,53 @@ body {
 .condicao {
   margin-top: 70px;
   max-width: 1120px;
-  font-family: Inter, sans-serif;
   font-size: clamp(36px, 5vw, 56px);
   font-weight: 400;
   line-height: 1.15;
-  flex-shrink: 0;
   text-align: center;
 }
 
 /* ===== BENEFÍCIO ===== */
+.ganhe {
+  margin-top: 40px;
+  font-size: clamp(60px, 8vw, 96px);
+  font-weight: 700;
+}
+
 .percentual {
   display: flex;
   align-items: flex-end;
   justify-content: center;
   margin-top: -20px;
-  flex-shrink: 0;
 }
 
 .numero {
-  font-family: Inter, sans-serif;
   font-weight: 900;
   font-size: clamp(300px, 40vw, 540px);
 }
 
 .percent {
-  font-family: Inter, sans-serif;
   font-weight: 900;
   font-size: clamp(300px, 40vw, 540px);
   margin-left: 12px;
-  margin-bottom: 0;
 }
 
 .desconto {
   margin-top: -100px;
-  font-family: Inter, sans-serif;
   font-size: clamp(80px, 10vw, 120px);
   font-weight: 700;
-  flex-shrink: 0;
 }
 
 /* ===== LEGAL ===== */
 .legal {
   margin-top: 80px;
   max-width: 1100px;
-  font-family: Inter, sans-serif;
   font-size: clamp(24px, 3vw, 36px);
-  font-weight: 400;
   line-height: 1.15;
-  flex-shrink: 0;
   text-align: center;
 }
 
-/* ===== CUPOM ===== */
+/* ===== CUPOM BOX ===== */
 .cupom-box {
   margin-top: 40px;
   width: 1200px;
@@ -152,7 +120,6 @@ body {
   border-radius: 40px;
   display: grid;
   grid-template-columns: 180px 1fr;
-  align-items: center;
 }
 
 .cupom-label {
@@ -163,18 +130,21 @@ body {
 
 .cupom-label span {
   transform: rotate(-90deg);
-  font-family: Inter, sans-serif;
   font-size: clamp(40px, 4.8vw, 57.6px);
   font-weight: 700;
   color: #ffffff;
 }
 
 .cupom-codigo {
-  font-size: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 40px;
+  font-size: clamp(100px, 12vw, 160px);
   font-weight: 900;
   color: #ffffff;
   white-space: nowrap;
-  text-align: center;
+  overflow: hidden;
 }
 
 /* ===== RODAPÉ ===== */
@@ -182,24 +152,19 @@ body {
   margin-top: auto;
   margin-bottom: 60px;
   text-align: center;
-  flex-shrink: 0;
 }
 
 .uf {
-  font-family: Inter, sans-serif;
   font-size: clamp(32px, 4vw, 48px);
   font-weight: 700;
 }
 
 .segmento-label {
   margin-top: 24px;
-  font-family: Inter, sans-serif;
   font-size: clamp(24px, 3vw, 36px);
-  font-weight: 400;
 }
 
 .segmento-valor {
-  font-family: Inter, sans-serif;
   font-size: clamp(32px, 4vw, 50px);
   font-weight: 700;
 }
@@ -207,79 +172,38 @@ body {
 </head>
 
 <body>
-  <div class="card">
-    <!-- CONTAINER DO SELO -->
-    <div id="selo-container">
-      <img src="{{SELO}}" id="selo-img" alt="">
+<div class="card">
+
+  <div class="logo">
+    <img src="{{LOGO}}" alt="Logo">
+  </div>
+
+  <div class="condicao upper text-wrap">{{TEXTO}}</div>
+
+  <div class="percentual">
+    <div class="numero">{{VALOR}}</div>
+    <div class="percent">%</div>
+  </div>
+
+  <div class="desconto upper">DE DESCONTO</div>
+
+  <div class="legal upper text-wrap">{{LEGAL}}</div>
+
+  <div class="cupom-box">
+    <div class="cupom-label">
+      <span class="upper">CUPOM</span>
     </div>
-
-    <div class="logo">
-      <img src="{{LOGO}}" alt="Logo">
-    </div>
-
-    <div class="condicao upper text-wrap">{{TEXTO}}</div>
-
-    <div class="percentual">
-      <div class="numero">{{VALOR}}</div>
-      <div class="percent">%</div>
-    </div>
-
-    <div class="desconto upper">DE DESCONTO</div>
-
-    <div class="legal upper text-wrap">{{LEGAL}}</div>
-
-    <div class="cupom-box">
-      <div class="cupom-label"><span class="upper">CUPOM</span></div>
-      <div id="cupom-container" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 0 60px;">
-        <div id="cupom-codigo" class="cupom-codigo upper">{{CUPOM}}</div>
-      </div>
-    </div>
-
-    <div class="rodape">
-      <div class="uf upper">{{UF}}</div>
-      <div class="segmento-label upper">SEGMENTO DE CLIENTES:</div>
-      <div class="segmento-valor upper">{{SEGMENTO}}</div>
+    <div class="cupom-codigo upper">
+      {{CUPOM}}
     </div>
   </div>
 
-  <script>
-    function adjustFontSize() {
-      const container = document.getElementById('cupom-container');
-      const text = document.getElementById('cupom-codigo');
-      if (!container || !text) return;
-      
-      let fontSize = 160;
-      const minFontSize = 40;
+  <div class="rodape">
+    <div class="uf upper">{{UF}}</div>
+    <div class="segmento-label upper">SEGMENTO DE CLIENTES:</div>
+    <div class="segmento-valor upper">{{SEGMENTO}}</div>
+  </div>
 
-      text.style.fontSize = fontSize + 'px';
-
-      while ((text.scrollWidth > container.offsetWidth || text.scrollHeight > container.offsetHeight) && fontSize > minFontSize) {
-        fontSize -= 5;
-        text.style.fontSize = fontSize + 'px';
-      }
-    }
-
-    function checkSelo() {
-      const seloImg = document.getElementById('selo-img');
-      const seloContainer = document.getElementById('selo-container');
-      
-      const src = seloImg.getAttribute('src');
-      if (src && src.startsWith('data:image')) {
-        seloContainer.style.display = 'flex';
-      } else {
-        seloContainer.style.display = 'none';
-      }
-    }
-    
-    window.onload = () => {
-      adjustFontSize();
-      checkSelo();
-    };
-    
-    document.fonts.ready.then(() => {
-      adjustFontSize();
-      checkSelo();
-    });
-  </script>
+</div>
 </body>
 </html>
