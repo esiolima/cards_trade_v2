@@ -26,32 +26,40 @@
   font-family: Inter, sans-serif;
 }
 
-body {
+html, body {
   margin: 0;
   width: 1400px;
   height: 2115px;
+  background: transparent; /* FUNDO TRANSPARENTE */
   display: flex;
   justify-content: center;
   align-items: center;
-  background: #ffffff;
   color: #1F3C6E;
 }
 
-.upper { text-transform: uppercase; }
-.text-wrap { text-align: center; }
-
-/* CARD */
+/* ===== CARD ===== */
 .card {
   width: 1400px;
   height: 2115px;
-  background: #ffffff;
+  background: transparent; /* fora da moldura transparente */
   border-radius: 140px;
   border: 12px solid #F2C94C;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+/* ÁREA INTERNA BRANCA */
+.card-inner {
+  width: 100%;
+  height: 100%;
+  background: #ffffff;
+  border-radius: 128px; /* ajustado para compensar borda */
   display: flex;
   flex-direction: column;
   align-items: center;
   padding: 0 40px;
-  overflow: hidden;
   position: relative;
 }
 
@@ -72,8 +80,6 @@ body {
 #selo-container img {
   max-width: 100%;
   max-height: 100%;
-  width: auto;
-  height: auto;
   object-fit: contain;
 }
 
@@ -95,11 +101,9 @@ body {
   color: #ffffff;
   padding: 40px 100px;
   border-radius: 999px;
-  font-family: Inter, sans-serif;
   font-weight: 700;
   font-size: clamp(80px, 10vw, 120px);
   text-transform: uppercase;
-  flex-shrink: 0;
   text-align: center;
 }
 
@@ -108,12 +112,10 @@ body {
   margin-top: 40px;
   max-width: 1120px;
   text-align: center;
-  font-family: Inter, sans-serif;
   font-size: clamp(36px, 5vw, 56px);
   font-weight: 400;
   line-height: 1.15;
   text-transform: uppercase;
-  flex-shrink: 0;
 }
 
 /* ===== BENEFÍCIO ===== */
@@ -124,7 +126,6 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
 }
 
 #beneficio-container {
@@ -138,7 +139,6 @@ body {
 }
 
 .beneficio-texto {
-  font-family: Inter, sans-serif;
   font-weight: 900;
   font-size: 240px;
   text-transform: uppercase;
@@ -152,12 +152,10 @@ body {
   margin-top: 80px;
   max-width: 1100px;
   text-align: center;
-  font-family: Inter, sans-serif;
   font-size: clamp(24px, 3vw, 36px);
   font-weight: 400;
   line-height: 1.15;
   text-transform: uppercase;
-  flex-shrink: 0;
 }
 
 /* ===== RODAPÉ ===== */
@@ -165,11 +163,9 @@ body {
   margin-top: auto;
   margin-bottom: 60px;
   text-align: center;
-  flex-shrink: 0;
 }
 
 .uf {
-  font-family: Inter, sans-serif;
   font-size: clamp(32px, 4vw, 48px);
   font-weight: 700;
   text-transform: uppercase;
@@ -177,15 +173,12 @@ body {
 
 .segmento-label {
   margin-top: 24px;
-  font-family: Inter, sans-serif;
   font-size: clamp(24px, 3vw, 36px);
   font-weight: 400;
   text-transform: uppercase;
 }
 
 .segmento-valor {
-  margin-top: 0;
-  font-family: Inter, sans-serif;
   font-size: clamp(32px, 4vw, 50px);
   font-weight: 700;
   text-transform: uppercase;
@@ -196,36 +189,41 @@ body {
 <body>
 
   <div class="card">
-    <div id="selo-container">
-      <img src="{{SELO}}" id="selo-img" alt="">
-    </div>
+    <div class="card-inner">
 
-    <div class="logo">
-      <img src="{{LOGO}}" alt="Logo">
-    </div>
-
-    <div class="faixa-promocao">PROMOÇÃO</div>
-
-    <div class="condicao">
-      {{TEXTO}}
-    </div>
-
-    <div class="beneficio">
-      <div id="beneficio-container">
-        <div id="beneficio-texto" class="beneficio-texto">{{VALOR}}</div>
+      <div id="selo-container">
+        <img src="{{SELO}}" id="selo-img" alt="">
       </div>
-    </div>
 
-    <div class="legal">
-      {{LEGAL}}
-    </div>
+      <div class="logo">
+        <img src="{{LOGO}}" alt="Logo">
+      </div>
 
-    <div class="rodape">
-      <div class="uf">{{UF}}</div>
-      <div class="segmento-label">SEGMENTO DE CLIENTES:</div>
-      <div class="segmento-valor">{{SEGMENTO}}</div>
-    </div>
+      <div class="faixa-promocao">PROMOÇÃO</div>
 
+      <div class="condicao">
+        {{TEXTO}}
+      </div>
+
+      <div class="beneficio">
+        <div id="beneficio-container">
+          <div id="beneficio-texto" class="beneficio-texto">
+            {{VALOR}}
+          </div>
+        </div>
+      </div>
+
+      <div class="legal">
+        {{LEGAL}}
+      </div>
+
+      <div class="rodape">
+        <div class="uf">{{UF}}</div>
+        <div class="segmento-label">SEGMENTO DE CLIENTES:</div>
+        <div class="segmento-valor">{{SEGMENTO}}</div>
+      </div>
+
+    </div>
   </div>
 
   <script>
@@ -233,13 +231,17 @@ body {
       const container = document.getElementById('beneficio-container');
       const text = document.getElementById('beneficio-texto');
       if (!container || !text) return;
-      
+
       let fontSize = 240;
       const minFontSize = 40;
 
       text.style.fontSize = fontSize + 'px';
 
-      while ((text.scrollWidth > container.offsetWidth || text.scrollHeight > container.offsetHeight) && fontSize > minFontSize) {
+      while (
+        (text.scrollWidth > container.offsetWidth ||
+         text.scrollHeight > container.offsetHeight) &&
+        fontSize > minFontSize
+      ) {
         fontSize -= 5;
         text.style.fontSize = fontSize + 'px';
       }
@@ -249,18 +251,19 @@ body {
       const seloImg = document.getElementById('selo-img');
       const seloContainer = document.getElementById('selo-container');
       const src = seloImg.getAttribute('src');
+
       if (src && src.startsWith('data:image')) {
         seloContainer.style.display = 'flex';
       } else {
         seloContainer.style.display = 'none';
       }
     }
-    
+
     window.onload = () => {
       adjustFontSize();
       checkSelo();
     };
-    
+
     document.fonts.ready.then(() => {
       adjustFontSize();
       checkSelo();
