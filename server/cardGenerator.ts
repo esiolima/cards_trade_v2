@@ -187,7 +187,7 @@ export class CardGenerator extends EventEmitter {
       fs.writeFileSync(tmpHtmlPath, html);
 
       const page = await this.browser.newPage();
-      await page.setViewport({ width: 1400, height: 2115 });
+      await page.setViewport({ width: 700, height: 1058 });
 
       await page.goto(`file://${tmpHtmlPath}`, {
         waitUntil: "networkidle0",
@@ -203,8 +203,8 @@ export class CardGenerator extends EventEmitter {
 
       await page.pdf({
         path: pdfPath,
-        width: "1400px",
-        height: "2115px",
+        width: "700px",
+        height: "1058px",
         printBackground: true,
       });
 
