@@ -65,20 +65,20 @@ body {
 
 /* LOGO */
 .logo {
-  margin-top: 60px;          /* mais respiro superior */
-  height: 220px;             /* área fixa maior */
+  margin-top: 60px;
+  height: 220px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .logo img {
-  max-height: 220px;         /* imagem pode ocupar toda altura */
-  max-width: 520px;          /* mais largura disponível */
+  max-height: 220px;
+  max-width: 520px;
   object-fit: contain;
 }
 
-/* TÍTULO ALTERADO */
+/* TÍTULO */
 .titulo {
   margin-top: 35px;
   background: #237f19;
@@ -86,14 +86,14 @@ body {
   padding: 20px 70px;
   border-radius: 999px;
   font-weight: 700;
-  font-size: 54px; /* ligeiramente reduzido */
+  font-size: 54px;
   text-align: center;
-  white-space: nowrap; /* impede quebra de linha */
+  white-space: nowrap;
 }
 
 /* BENEFÍCIO */
 .beneficio {
-  margin-top: 70px;
+  margin-top: 50px;
   text-align: center;
 }
 
@@ -101,21 +101,29 @@ body {
   display: flex;
   justify-content: center;
   align-items: flex-end;
+  width: 100%;
+  padding: 0 30px;
+  margin-bottom: 20px;
 }
 
 .numero {
   font-weight: 900;
-  font-size: 240px;
+  font-size: clamp(120px, 25vw, 240px);
+  line-height: 0.8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .percent {
   font-weight: 900;
-  font-size: 240px;
+  font-size: clamp(120px, 25vw, 240px);
   margin-left: 6px;
+  line-height: 0.8;
 }
 
 .desconto {
-  margin-top: -30px;
+  margin-top: 0px;
   font-weight: 700;
   font-size: 46px;
 }
@@ -131,9 +139,18 @@ body {
   word-break: break-word;
 }
 
+/* AREA DE ESPAÇAMENTO DINÂMICO */
+.espaco-flexivel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly; /* Garante que o elemento legal fique equidistante */
+  align-items: center;
+  width: 100%;
+}
+
 /* LEGAL */
 .legal {
-  margin-top: 40px;
   text-align: center;
   font-size: 18px;
   max-width: 550px;
@@ -143,7 +160,6 @@ body {
 
 /* RODAPÉ */
 .rodape {
-  margin-top: auto;
   margin-bottom: 30px;
   text-align: center;
 }
@@ -188,15 +204,19 @@ body {
       <div class="desconto">DE DESCONTO</div>
     </div>
 
-    <div class="texto">{{COMPLEMENTO}}</div>
-
-    <div class="legal">{{LEGAL}}</div>
+    <div class="espaco-flexivel">
+      <div class="texto">{{COMPLEMENTO}}</div>
+      <div class="legal">{{LEGAL}}</div>
+    </div>
 
     <div class="rodape">
       <div class="uf">{{UF}}</div>
       <div class="uf">{{URN}}</div>
-      <div class="segmento-label">SEGMENTO DE CLIENTES:</div>
-      <div class="segmento-valor">{{SEGMENTO}}</div>
+
+      <div class="segmento-container">
+        <div class="segmento-label">SEGMENTO DE CLIENTES:</div>
+        <div class="segmento-valor">{{SEGMENTO}}</div>
+      </div>
     </div>
 
   </div>
