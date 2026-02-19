@@ -124,22 +124,16 @@ export class CardGenerator extends EventEmitter {
       const templatePath = path.join(TEMPLATES_DIR, `${tipo}.html`);
       let html = fs.readFileSync(templatePath, "utf8");
 
-      /* LOGO */
       const logoPath = path.join(LOGOS_DIR, row.logo || "blank.png");
       const logoBase64 = imageToBase64(logoPath);
 
-      /* SELO */
       let seloBase64 = "";
       const seloUpper = upper(row.selo);
 
       if (seloUpper === "NOVA") {
-        seloBase64 = imageToBase64(
-          path.join(SELOS_DIR, "acaonova.png")
-        );
+        seloBase64 = imageToBase64(path.join(SELOS_DIR, "acaonova.png"));
       } else if (seloUpper === "RENOVADA") {
-        seloBase64 = imageToBase64(
-          path.join(SELOS_DIR, "acaorenovada.png")
-        );
+        seloBase64 = imageToBase64(path.join(SELOS_DIR, "acaorenovada.png"));
       }
 
       const valorFinal =
@@ -147,7 +141,6 @@ export class CardGenerator extends EventEmitter {
           ? upper(row.valor)
           : formatPercentage(row.valor);
 
-      /* REPLACES COMPLETOS */
       html = html.replaceAll("{{LOGO}}", logoBase64);
       html = html.replaceAll("{{TEXTO}}", upper(row.texto));
       html = html.replaceAll("{{VALOR}}", valorFinal);
@@ -221,5 +214,12 @@ export class CardGenerator extends EventEmitter {
       output.on("close", resolve);
       archive.on("error", reject);
     });
+  }
+
+  async close() {
+    if (this.browser) {
+      await this.browser.close();
+      this.browser = null;
+    }
   }
 }
