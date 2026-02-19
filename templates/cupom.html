@@ -72,17 +72,11 @@ body {
 }
 
 /* ===== BENEFÍCIO ===== */
-.ganhe {
-  margin-top: 40px;
-  font-size: clamp(60px, 8vw, 96px);
-  font-weight: 700;
-}
-
 .percentual {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  margin-top: -20px;
+  margin-top: 40px;
 }
 
 .numero {
@@ -140,11 +134,11 @@ body {
   align-items: center;
   justify-content: center;
   padding: 0 40px;
-  font-size: clamp(100px, 12vw, 160px);
   font-weight: 900;
   color: #ffffff;
   white-space: nowrap;
   overflow: hidden;
+  text-align: center;
 }
 
 /* ===== RODAPÉ ===== */
@@ -193,7 +187,7 @@ body {
     <div class="cupom-label">
       <span class="upper">CUPOM</span>
     </div>
-    <div class="cupom-codigo upper">
+    <div class="cupom-codigo upper" id="cupomCodigo">
       {{CUPOM}}
     </div>
   </div>
@@ -205,5 +199,21 @@ body {
   </div>
 
 </div>
+
+<script>
+function autoFitCupom() {
+  const el = document.getElementById("cupomCodigo");
+  let fontSize = 160; 
+  el.style.fontSize = fontSize + "px";
+
+  while (el.scrollWidth > el.clientWidth && fontSize > 40) {
+    fontSize -= 2;
+    el.style.fontSize = fontSize + "px";
+  }
+}
+
+window.onload = autoFitCupom;
+</script>
+
 </body>
 </html>
