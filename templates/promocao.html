@@ -25,6 +25,7 @@
 * { 
   box-sizing: border-box;
   font-family: Inter, sans-serif;
+  text-transform: uppercase; /* Força caixa alta em tudo */
 }
 
 body {
@@ -64,17 +65,17 @@ body {
   object-fit: contain;
 }
 
-/* LOGO */
+/* LOGO - Reduzido para 70% (154px) */
 .logo {
   margin-top: 60px;
-  height: 220px;
+  height: 154px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .logo img {
-  max-height: 220px;
+  max-height: 154px;
   max-width: 520px;
   object-fit: contain;
 }
@@ -114,7 +115,6 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  text-transform: uppercase; /* Força Caixa Alta */
 }
 
 .percent {
@@ -124,7 +124,8 @@ body {
   line-height: 0.8;
 }
 
-.desconto {
+/* No promocao.html, o termo fixo foi substituído pelo elemento dinâmico {{COMPLEMENTO}} */
+.complemento-destaque {
   margin-top: 0px;
   font-weight: 700;
   font-size: 46px;
@@ -146,21 +147,12 @@ body {
   flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: space-evenly; /* Garante que o elemento legal fique equidistante */
+  justify-content: space-evenly;
   align-items: center;
   width: 100%;
 }
 
-/* COMPLEMENTO E LEGAL */
-.complemento {
-  text-align: center;
-  font-weight: 400;
-  font-size: 28px;
-  max-width: 550px;
-  line-height: 1.15;
-  word-break: break-word;
-}
-
+/* LEGAL */
 .legal {
   text-align: center;
   font-size: 18px;
@@ -212,11 +204,10 @@ body {
         <div class="numero">{{VALOR}}</div>
         <div class="percent">%</div>
       </div>
-      <div class="desconto">DE DESCONTO</div>
+      <div class="complemento-destaque">{{COMPLEMENTO}}</div>
     </div>
 
     <div class="espaco-flexivel">
-      <div class="complemento">{{COMPLEMENTO}}</div>
       <div class="legal">{{LEGAL}}</div>
     </div>
 
