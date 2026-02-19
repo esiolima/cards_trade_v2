@@ -2,71 +2,198 @@
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8" />
-<title>Queda</title>
+<title>Queda de Preço</title>
 
 <style>
-.card {
-  width: 1400px;
-  height: 2115px;
-  border: 12px solid #F2C94C;
-  border-radius: 96px;
-  background: #ffffff;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 0 60px;
-  overflow: hidden;
-}
-
-.texto {
-  margin-top: 80px;
-  font-size: 72px;
+@font-face {
+  font-family: 'Inter';
+  src: url('../fonts/Inter-Regular.ttf') format('truetype');
   font-weight: 400;
-  text-align: center;
 }
-
-.valor {
-  margin-top: 40px;
-  font-size: 540px;
+@font-face {
+  font-family: 'Inter';
+  src: url('../fonts/Inter-Bold.ttf') format('truetype');
+  font-weight: 700;
+}
+@font-face {
+  font-family: 'Inter';
+  src: url('../fonts/Inter-Black.ttf') format('truetype');
   font-weight: 900;
 }
 
-.fixo {
-  font-size: 80px;
-  font-weight: 700;
-  margin-top: -60px;
+* { 
+  box-sizing: border-box;
+  font-family: Inter, sans-serif;
 }
 
-.complemento {
+body {
+  margin: 0;
+  background: transparent;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.card {
+  width: 700px;
+  height: 1057.5px;
+  background: #ffffff;
+  border: 6px solid #F2C94C;
+  border-radius: 70px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #1F3C6E;
+  padding: 0 20px;
+  overflow: hidden;
+  position: relative;
+}
+
+/* SELO */
+.selo {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100px;
+  height: 100px;
+}
+.selo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* LOGO */
+.logo {
+  margin-top: 45px;
+}
+.logo img {
+  max-width: 400px;
+  max-height: 160px;
+  object-fit: contain;
+}
+
+/* TÍTULO ALTERADO */
+.titulo {
+  margin-top: 35px;
+  background: #237f19;
+  color: #ffffff;
+  padding: 20px 70px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 54px; /* ligeiramente reduzido */
+  text-align: center;
+  white-space: nowrap; /* impede quebra de linha */
+}
+
+/* BENEFÍCIO */
+.beneficio {
+  margin-top: 70px;
+  text-align: center;
+}
+
+.percentual {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+}
+
+.numero {
+  font-weight: 900;
+  font-size: 240px;
+}
+
+.percent {
+  font-weight: 900;
+  font-size: 240px;
+  margin-left: 6px;
+}
+
+.desconto {
+  margin-top: -30px;
+  font-weight: 700;
+  font-size: 46px;
+}
+
+/* TEXTO */
+.texto {
   margin-top: 30px;
-  max-width: 1120px;
-  font-size: clamp(48px, 6vw, 72px);
+  text-align: center;
   font-weight: 400;
+  font-size: 28px;
+  max-width: 550px;
+  line-height: 1.15;
+  word-break: break-word;
+}
+
+/* LEGAL */
+.legal {
+  margin-top: 40px;
+  text-align: center;
+  font-size: 18px;
+  max-width: 550px;
+  line-height: 1.15;
+  word-break: break-word;
+}
+
+/* RODAPÉ */
+.rodape {
+  margin-top: auto;
+  margin-bottom: 30px;
   text-align: center;
 }
 
-.legal {
-  margin-top: 60px;
-  font-size: 44px;
+.uf {
   font-weight: 700;
-  text-align: center;
+  font-size: 24px;
+}
+
+.segmento-label {
+  margin-top: 12px;
+  font-size: 18px;
+}
+
+.segmento-valor {
+  font-weight: 700;
+  font-size: 25px;
 }
 </style>
 </head>
 
 <body>
-<div class="card">
+  <div class="card">
 
-  <div class="texto upper text-wrap">{{TEXTO}}</div>
+    <div class="selo">
+      <img src="{{SELO}}" alt="Selo">
+    </div>
 
-  <div class="valor upper text-wrap">{{VALOR}}</div>
+    <div class="logo">
+      <img src="{{LOGO}}" alt="Logo">
+    </div>
 
-  <div class="fixo upper">DE DESCONTO</div>
+    <div class="titulo">QUEDA DE PREÇO</div>
+	  
+    <div class="texto">{{TEXTO}}</div>
 
-  <div class="complemento upper text-wrap">{{COMPLEMENTO}}</div>
+    <div class="beneficio">
+      <div class="percentual">
+        <div class="numero">{{VALOR}}</div>
+        <div class="percent">%</div>
+      </div>
+      <div class="desconto">DE DESCONTO</div>
+    </div>
 
-  <div class="legal upper text-wrap">{{LEGAL}}</div>
+    <div class="texto">{{COMPLEMENTO}}</div>
 
-</div>
+    <div class="legal">{{LEGAL}}</div>
+
+    <div class="rodape">
+      <div class="uf">{{UF}}</div>
+      <div class="uf">{{URN}}</div>
+      <div class="segmento-label">SEGMENTO DE CLIENTES:</div>
+      <div class="segmento-valor">{{SEGMENTO}}</div>
+    </div>
+
+  </div>
 </body>
 </html>
