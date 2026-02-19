@@ -7,7 +7,7 @@ import { EventEmitter } from "events";
 
 const TEMPLATES_DIR = path.resolve("templates");
 const LOGOS_DIR = path.resolve("logos");
-const SELOS_DIR = path.join(process.cwd(), "selos");
+const SELOS_DIR = path.resolve("selos");
 const OUTPUT_DIR = path.resolve("output");
 const TMP_DIR = path.resolve("tmp");
 
@@ -22,6 +22,7 @@ interface CardData {
   uf?: string;
   segmento?: string;
   selo?: string;
+  categoria?: string;
 }
 
 interface GenerationProgress {
@@ -31,8 +32,18 @@ interface GenerationProgress {
   currentCard: string;
 }
 
-const upper = (v: any) =>
-  String(v ?? "").toUpperCase().trim();
+function getTimestampFileName(): string {
+  const now = new Date();
+  const pad = (n: number) => n.toString().padStart(2, "0");
+
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(
+    now.getDate()
+  )}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(
+    now.getSeconds()
+  )}.zip`;
+}
+
+const upper = (v: any) => String(v ?? "").toUpperCase().trim();
 
 function imageToBase64(imagePath: string): string {
   if (!fs.existsSync(imagePath)) return "";
@@ -58,32 +69,18 @@ function normalizeType(tipo: string): string {
   return "";
 }
 
-/* =========================================
-   TRATAMENTO CORRETO DE VALOR (%)
-========================================= */
-
 function formatPercentage(valor: any): string {
-  if (valor === null || valor === undefined || valor === "") return "";
+  if (!valor) return "";
 
   let num = Number(valor);
 
   if (!isNaN(num)) {
-    // Se vier 0.03 do Excel → vira 3
-    if (num > 0 && num < 1) {
-      num = num * 100;
-    }
-
-    // Remove casas desnecessárias
-    if (Number.isInteger(num)) {
-      return String(num);
-    }
-
+    if (num > 0 && num < 1) num = num * 100;
+    if (Number.isInteger(num)) return String(num);
     return String(Number(num.toFixed(2)));
   }
 
-  // Se vier como string
-  let texto = String(valor).replace(/%+/g, "").trim();
-  return texto;
+  return String(valor).replace(/%+/g, "").trim();
 }
 
 export class CardGenerator extends EventEmitter {
@@ -108,143 +105,86 @@ export class CardGenerator extends EventEmitter {
   ): Promise<string> {
     if (!this.browser) throw new Error("Generator not initialized");
 
-    try {
-      const workbook = xlsx.readFile(excelFilePath, { cellDates: false });
-      const sheet = workbook.Sheets[workbook.SheetNames[0]];
-      const rows = xlsx.utils.sheet_to_json<CardData>(sheet, { defval: "" });
+    const workbook = xlsx.readFile(excelFilePath, { cellDates: false });
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const rows = xlsx.utils.sheet_to_json<CardData>(sheet, { defval: "" });
 
-      const validRows = rows.filter((row) => {
-        const tipo = normalizeType(row.tipo);
-        return tipo && fs.existsSync(path.join(TEMPLATES_DIR, `${tipo}.html`));
+    const validRows = rows.filter((row) => {
+      const tipo = normalizeType(row.tipo);
+      return tipo && fs.existsSync(path.join(TEMPLATES_DIR, `${tipo}.html`));
+    });
+
+    const total = validRows.length;
+    let processed = 0;
+
+    for (const row of validRows) {
+      const tipo = normalizeType(row.tipo);
+      const templatePath = path.join(TEMPLATES_DIR, `${tipo}.html`);
+      let html = fs.readFileSync(templatePath, "utf8");
+
+      const textoFinal = upper(row.texto);
+      const valorFinal =
+        tipo === "promocao"
+          ? upper(row.valor)
+          : formatPercentage(row.valor);
+
+      const categoriaFinal = upper(row.categoria);
+
+      /* =====================
+         SELO
+      ===================== */
+
+      let seloBase64 = "";
+      const seloValue = upper(row.selo);
+
+      if (seloValue === "NOVA") {
+        const seloPath = path.join(SELOS_DIR, "acaonova.png");
+        seloBase64 = imageToBase64(seloPath);
+      }
+
+      if (seloValue === "RENOVADA") {
+        const seloPath = path.join(SELOS_DIR, "acaorenovada.png");
+        seloBase64 = imageToBase64(seloPath);
+      }
+
+      const seloHtml = seloBase64
+        ? `<img src="${seloBase64}" style="position:absolute; top:40px; left:40px; width:250px;" />`
+        : "";
+
+      html = html.replaceAll("{{TEXTO}}", textoFinal);
+      html = html.replaceAll("{{VALOR}}", valorFinal);
+      html = html.replaceAll("{{SELO}}", seloHtml);
+
+      const tmpHtmlPath = path.join(TMP_DIR, `card_${processed + 1}.html`);
+      fs.writeFileSync(tmpHtmlPath, html, "utf8");
+
+      const page = await this.browser.newPage();
+      await page.setViewport({ width: 1400, height: 2115 });
+
+      await page.goto(`file://${path.resolve(tmpHtmlPath)}`, {
+        waitUntil: "networkidle0",
       });
 
-      const total = validRows.length;
-      let processed = 0;
+      const ordem = String(row.ordem || processed + 1).trim();
 
-      for (const row of validRows) {
-        const tipo = normalizeType(row.tipo);
-        const templatePath = path.join(TEMPLATES_DIR, `${tipo}.html`);
-        let html = fs.readFileSync(templatePath, "utf8");
+      const pdfName = `${ordem}_${tipo.toUpperCase()}_${categoriaFinal}.pdf`;
+      const pdfPath = path.join(OUTPUT_DIR, pdfName);
 
-        /* =========================
-           LOGO
-        ========================= */
+      await page.pdf({
+        path: pdfPath,
+        width: "1400px",
+        height: "2115px",
+        printBackground: true,
+      });
 
-        let logoFileName = row.logo?.trim();
-        if (!logoFileName) logoFileName = "blank.png";
+      await page.close();
 
-        const logoPath = path.join(LOGOS_DIR, logoFileName);
-        const logoBase64 = imageToBase64(logoPath);
+      processed++;
 
-        /* =========================
-           SELO
-        ========================= */
+      const percentage = Math.round((processed / total) * 100);
 
-        let seloBase64 = "";
-        const seloValue = upper(row.selo);
-
-        if (seloValue) {
-          let seloFileName = "";
-
-          if (seloValue.includes("RENOVADA")) {
-            seloFileName = "acaorenovada.png";
-          } else if (seloValue.includes("NOVA")) {
-            seloFileName = "acaonova.png";
-          }
-
-          if (seloFileName) {
-            const seloPath = path.join(SELOS_DIR, seloFileName);
-            if (fs.existsSync(seloPath)) {
-              seloBase64 = imageToBase64(seloPath);
-            }
-          }
-        }
-
-        /* =========================
-           VALOR
-        ========================= */
-
-        let valorFinal = "";
-
-        if (tipo === "promocao") {
-          // PROMO = exatamente o que foi digitado
-          valorFinal = upper(row.valor);
-        } else {
-          valorFinal = formatPercentage(row.valor);
-        }
-
-        /* =========================
-           OUTROS CAMPOS
-        ========================= */
-
-        const textoFinal = upper(row.texto);
-        const cupomFinal = upper(row.cupom);
-        const legalFinal = upper(row.legal);
-        const ufFinal = upper(row.uf);
-        const segmentoFinal = upper(row.segmento);
-
-        /* =========================
-           REPLACE HTML
-        ========================= */
-
-        html = html.replaceAll("{{LOGO}}", logoBase64);
-        html = html.replaceAll("{{TEXTO}}", textoFinal);
-        html = html.replaceAll("{{VALOR}}", valorFinal);
-        html = html.replaceAll("{{CUPOM}}", cupomFinal);
-        html = html.replaceAll("{{LEGAL}}", legalFinal);
-        html = html.replaceAll("{{UF}}", ufFinal);
-        html = html.replaceAll("{{SEGMENTO}}", segmentoFinal);
-        html = html.replaceAll("{{SELO}}", seloBase64);
-
-        /* =========================
-           GERAR PDF
-        ========================= */
-
-        const tmpHtmlPath = path.join(
-          TMP_DIR,
-          `card_${processed + 1}.html`
-        );
-
-        fs.writeFileSync(tmpHtmlPath, html, "utf8");
-
-        const page = await this.browser.newPage();
-        await page.setViewport({ width: 1400, height: 2115 });
-
-        await page.goto(`file://${path.resolve(tmpHtmlPath)}`, {
-          waitUntil: "networkidle0",
-        });
-
-        const ordem = String(row.ordem || processed + 1).trim();
-        const tipoUpper = tipo.toUpperCase();
-
-        const pdfPath = path.join(
-          OUTPUT_DIR,
-          `${ordem}_${tipoUpper}.pdf`
-        );
-
-        await page.pdf({
-          path: pdfPath,
-          width: "1400px",
-          height: "2115px",
-          printBackground: true,
-        });
-
-        await page.close();
-
-        processed++;
-
-        const percentage = Math.round((processed / total) * 100);
-
-        if (onProgress) {
-          onProgress({
-            total,
-            processed,
-            percentage,
-            currentCard: `${processed}/${total}`,
-          });
-        }
-
-        this.emit("progress", {
+      if (onProgress) {
+        onProgress({
           total,
           processed,
           percentage,
@@ -252,13 +192,20 @@ export class CardGenerator extends EventEmitter {
         });
       }
 
-      const zipPath = path.join(OUTPUT_DIR, "cards.zip");
-      await this.createZip(OUTPUT_DIR, zipPath);
-
-      return zipPath;
-    } finally {
-      this.cleanup();
+      this.emit("progress", {
+        total,
+        processed,
+        percentage,
+        currentCard: `${processed}/${total}`,
+      });
     }
+
+    const zipName = getTimestampFileName();
+    const zipPath = path.join(OUTPUT_DIR, zipName);
+
+    await this.createZip(OUTPUT_DIR, zipPath);
+
+    return zipPath;
   }
 
   private async createZip(sourceDir: string, zipPath: string): Promise<void> {
@@ -280,24 +227,6 @@ export class CardGenerator extends EventEmitter {
 
       archive.finalize();
     });
-  }
-
-  private cleanup() {
-    if (fs.existsSync(TMP_DIR)) {
-      const files = fs.readdirSync(TMP_DIR);
-      for (const file of files) {
-        fs.unlinkSync(path.join(TMP_DIR, file));
-      }
-    }
-
-    if (fs.existsSync(OUTPUT_DIR)) {
-      const files = fs.readdirSync(OUTPUT_DIR);
-      for (const file of files) {
-        if (file.endsWith(".pdf")) {
-          fs.unlinkSync(path.join(OUTPUT_DIR, file));
-        }
-      }
-    }
   }
 
   async close() {
