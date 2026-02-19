@@ -29,12 +29,10 @@
 
 body {
   margin: 0;
-  background: #f0f0f0;
+  background: transparent;
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 100vh;
-  padding: 20px;
 }
 
 .card {
@@ -50,7 +48,6 @@ body {
   padding: 0 20px;
   overflow: hidden;
   position: relative;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
 }
 
 /* SELO */
@@ -97,7 +94,7 @@ body {
 
 /* BENEFÍCIO */
 .beneficio {
-  margin-top: 70px;
+  margin-top: 50px;
   text-align: center;
 }
 
@@ -105,16 +102,30 @@ body {
   display: flex;
   justify-content: center;
   align-items: flex-end;
+  width: 100%;
+  padding: 0 30px;
+  margin-bottom: 20px;
 }
 
-.numero, .percent {
+.numero {
   font-weight: 900;
-  font-size: 240px;
+  font-size: clamp(120px, 25vw, 240px);
+  line-height: 0.8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-transform: uppercase; /* Força Caixa Alta */
+}
+
+.percent {
+  font-weight: 900;
+  font-size: clamp(120px, 25vw, 240px);
+  margin-left: 6px;
   line-height: 0.8;
 }
 
 .desconto {
-  margin-top: 40px; /* Espaço entre o valor e o texto de desconto */
+  margin-top: 0px;
   font-weight: 700;
   font-size: 46px;
 }
@@ -127,24 +138,41 @@ body {
   font-size: 28px;
   max-width: 550px;
   line-height: 1.15;
+  word-break: break-word;
 }
 
-/* RODAPÉ E LEGAL */
-.rodape {
-  margin-top: auto;
-  margin-bottom: 30px;
-  text-align: center;
+/* AREA DE ESPAÇAMENTO DINÂMICO */
+.espaco-flexivel {
+  flex: 1;
   display: flex;
   flex-direction: column;
+  justify-content: space-evenly; /* Garante que o elemento legal fique equidistante */
   align-items: center;
-  gap: 15px; /* Espaçamento uniforme entre os elementos */
+  width: 100%;
+}
+
+/* COMPLEMENTO E LEGAL */
+.complemento {
+  text-align: center;
+  font-weight: 400;
+  font-size: 28px;
+  max-width: 550px;
+  line-height: 1.15;
+  word-break: break-word;
 }
 
 .legal {
+  text-align: center;
   font-size: 18px;
   max-width: 550px;
   line-height: 1.15;
-  margin-bottom: 10px;
+  word-break: break-word;
+}
+
+/* RODAPÉ */
+.rodape {
+  margin-bottom: 30px;
+  text-align: center;
 }
 
 .uf {
@@ -152,11 +180,8 @@ body {
   font-weight: 700;
 }
 
-.segmento-container {
-  margin-top: 5px;
-}
-
 .segmento-label {
+  margin-top: 12px;
   font-size: clamp(12px, 1.5vw, 18px);
 }
 
@@ -179,7 +204,7 @@ body {
     </div>
 
     <div class="titulo">PROMOÇÃO</div>
-      
+	  
     <div class="texto">{{TEXTO}}</div>
 
     <div class="beneficio">
@@ -190,15 +215,14 @@ body {
       <div class="desconto">DE DESCONTO</div>
     </div>
 
-    <div class="texto">{{COMPLEMENTO}}</div>
+    <div class="espaco-flexivel">
+      <div class="complemento">{{COMPLEMENTO}}</div>
+      <div class="legal">{{LEGAL}}</div>
+    </div>
 
     <div class="rodape">
-      <div class="legal">{{LEGAL}}</div>
-      
-      <div class="uf-container">
-        <div class="uf">{{UF}}</div>
-        <div class="uf">{{URN}}</div>
-      </div>
+      <div class="uf">{{UF}}</div>
+      <div class="uf">{{URN}}</div>
 
       <div class="segmento-container">
         <div class="segmento-label">SEGMENTO DE CLIENTES:</div>
