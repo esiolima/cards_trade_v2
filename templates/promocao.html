@@ -21,72 +21,48 @@
   font-weight: 900;
 }
 
-* { 
+* {
   box-sizing: border-box;
   font-family: Inter, sans-serif;
 }
 
-html, body {
+body {
   margin: 0;
-  width: 1400px;
-  height: 2115px;
-  background: transparent; /* FUNDO TRANSPARENTE */
+  background: transparent;
   display: flex;
   justify-content: center;
   align-items: center;
-  color: #1F3C6E;
 }
 
-/* ===== CARD ===== */
+.upper { text-transform: uppercase; }
+.text-wrap { text-align: center; }
+
+/* ================= CARD ================= */
 .card {
   width: 1400px;
   height: 2115px;
-  background: transparent; /* fora da moldura transparente */
-  border-radius: 140px;
   border: 12px solid #F2C94C;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  overflow: hidden;
-}
-
-/* ÁREA INTERNA BRANCA */
-.card-inner {
-  width: 100%;
-  height: 100%;
+  border-radius: 96px;
   background: #ffffff;
-  border-radius: 128px; /* ajustado para compensar borda */
   display: flex;
   flex-direction: column;
   align-items: center;
   padding: 0 40px;
   position: relative;
+  overflow: hidden;
 }
 
 /* ===== SELO ===== */
-#selo-container {
+.selo {
   position: absolute;
-  top: -20px;
-  left: 0;
-  width: 225px;
-  height: 225px;
-  z-index: 99999;
-  display: none;
-  align-items: flex-start;
-  justify-content: flex-start;
-  pointer-events: none;
-}
-
-#selo-container img {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
+  top: 40px;
+  left: 40px;
+  width: 240px;
 }
 
 /* ===== LOGO ===== */
 .logo {
-  margin-top: 90px;
-  flex-shrink: 0;
+  margin-top: 120px;
 }
 .logo img {
   max-height: 320px;
@@ -94,68 +70,50 @@ html, body {
   object-fit: contain;
 }
 
-/* ===== TÍTULO ===== */
-.faixa-promocao {
-  margin-top: 70px;
-  background: #F26A21;
+/* ===== TÍTULO PROMO ===== */
+.tipo {
+  margin-top: 80px;
+  background: #F36F21;
+  padding: 40px 120px;
+  border-radius: 200px;
+  font-size: 120px;
+  font-weight: 900;
   color: #ffffff;
-  padding: 40px 100px;
-  border-radius: 999px;
-  font-weight: 700;
-  font-size: clamp(80px, 10vw, 120px);
-  text-transform: uppercase;
-  text-align: center;
 }
 
-/* ===== MECÂNICA ===== */
+/* ===== CONDIÇÃO ===== */
 .condicao {
-  margin-top: 40px;
-  max-width: 1120px;
-  text-align: center;
-  font-size: clamp(36px, 5vw, 56px);
+  margin-top: 60px;
+  max-width: 1100px;
+  font-size: clamp(36px, 5vw, 60px);
   font-weight: 400;
   line-height: 1.15;
-  text-transform: uppercase;
-}
-
-/* ===== BENEFÍCIO ===== */
-.beneficio {
-  margin-top: 140px;
-  width: 1200px;
-  height: 400px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-#beneficio-container {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  padding: 0 60px;
-}
-
-.beneficio-texto {
-  font-weight: 900;
-  font-size: 240px;
-  text-transform: uppercase;
   text-align: center;
-  line-height: 1;
+}
+
+/* ===== VALOR (AJUSTÁVEL) ===== */
+.valor-container {
+  margin-top: 200px;
+  width: 1200px;
+  height: 260px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.valor {
+  font-weight: 900;
+  color: #1B3A6D;
   white-space: nowrap;
+  overflow: hidden;
 }
 
 /* ===== LEGAL ===== */
 .legal {
-  margin-top: 80px;
-  max-width: 1100px;
+  margin-top: 60px;
+  font-size: 36px;
   text-align: center;
-  font-size: clamp(24px, 3vw, 36px);
-  font-weight: 400;
-  line-height: 1.15;
-  text-transform: uppercase;
 }
 
 /* ===== RODAPÉ ===== */
@@ -166,109 +124,70 @@ html, body {
 }
 
 .uf {
-  font-size: clamp(32px, 4vw, 48px);
+  font-size: 48px;
   font-weight: 700;
-  text-transform: uppercase;
 }
 
 .segmento-label {
   margin-top: 24px;
-  font-size: clamp(24px, 3vw, 36px);
-  font-weight: 400;
-  text-transform: uppercase;
+  font-size: 36px;
 }
 
 .segmento-valor {
-  font-size: clamp(32px, 4vw, 50px);
+  font-size: 50px;
   font-weight: 700;
-  text-transform: uppercase;
 }
 </style>
 </head>
 
 <body>
+<div class="card">
 
-  <div class="card">
-    <div class="card-inner">
+  {{SELO}}
 
-      <div id="selo-container">
-        <img src="{{SELO}}" id="selo-img" alt="">
-      </div>
+  <div class="logo">
+    <img src="{{LOGO}}" alt="Logo">
+  </div>
 
-      <div class="logo">
-        <img src="{{LOGO}}" alt="Logo">
-      </div>
+  <div class="tipo upper">PROMOÇÃO</div>
 
-      <div class="faixa-promocao">PROMOÇÃO</div>
+  <div class="condicao upper text-wrap">
+    {{TEXTO}}
+  </div>
 
-      <div class="condicao">
-        {{TEXTO}}
-      </div>
-
-      <div class="beneficio">
-        <div id="beneficio-container">
-          <div id="beneficio-texto" class="beneficio-texto">
-            {{VALOR}}
-          </div>
-        </div>
-      </div>
-
-      <div class="legal">
-        {{LEGAL}}
-      </div>
-
-      <div class="rodape">
-        <div class="uf">{{UF}}</div>
-        <div class="segmento-label">SEGMENTO DE CLIENTES:</div>
-        <div class="segmento-valor">{{SEGMENTO}}</div>
-      </div>
-
+  <div class="valor-container">
+    <div class="valor upper" id="valorTexto">
+      {{VALOR}}
     </div>
   </div>
 
-  <script>
-    function adjustFontSize() {
-      const container = document.getElementById('beneficio-container');
-      const text = document.getElementById('beneficio-texto');
-      if (!container || !text) return;
+  <div class="legal upper text-wrap">
+    {{LEGAL}}
+  </div>
 
-      let fontSize = 240;
-      const minFontSize = 40;
+  <div class="rodape">
+    <div class="uf upper">{{UF}}</div>
+    <div class="segmento-label upper">SEGMENTO DE CLIENTES:</div>
+    <div class="segmento-valor upper">{{SEGMENTO}}</div>
+  </div>
 
-      text.style.fontSize = fontSize + 'px';
+</div>
 
-      while (
-        (text.scrollWidth > container.offsetWidth ||
-         text.scrollHeight > container.offsetHeight) &&
-        fontSize > minFontSize
-      ) {
-        fontSize -= 5;
-        text.style.fontSize = fontSize + 'px';
-      }
-    }
+<script>
+function autoFitValor() {
+  const el = document.getElementById("valorTexto");
 
-    function checkSelo() {
-      const seloImg = document.getElementById('selo-img');
-      const seloContainer = document.getElementById('selo-container');
-      const src = seloImg.getAttribute('src');
+  let fontSize = 180; // começa grande
+  el.style.fontSize = fontSize + "px";
 
-      if (src && src.startsWith('data:image')) {
-        seloContainer.style.display = 'flex';
-      } else {
-        seloContainer.style.display = 'none';
-      }
-    }
+  while (el.scrollWidth > el.clientWidth && fontSize > 50) {
+    fontSize -= 2;
+    el.style.fontSize = fontSize + "px";
+  }
+}
 
-    window.onload = () => {
-      adjustFontSize();
-      checkSelo();
-    };
-
-    document.fonts.ready.then(() => {
-      adjustFontSize();
-      checkSelo();
-    });
-  </script>
+window.onload = autoFitValor;
+</script>
 
 </body>
 </html>
