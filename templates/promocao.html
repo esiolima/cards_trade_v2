@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -50,7 +51,7 @@ body {
   padding: 0 20px;
   overflow: hidden;
   position: relative;
-  color: #1F3C6E; /* TODOS TEXTOS AGORA NESSA COR */
+  color: #1F3C6E;
 }
 
 /* ===== SELO ===== */
@@ -60,7 +61,7 @@ body {
   left: 0;
   width: 100px;
   height: 100px;
-  z-index: 10;
+  z-index: 20; /* garante que fique acima da moldura */
 }
 
 .selo img {
@@ -102,8 +103,8 @@ body {
 .numero,
 .percent {
   font-weight: 900;
-  font-size: clamp(150px, 20vw, 270px);
-  line-height: 1;
+  font-size: clamp(130px, 18vw, 230px);
+  line-height: 0.95;
 }
 
 .percent {
@@ -111,23 +112,24 @@ body {
 }
 
 .desconto {
-  margin-top: -50px;
-  font-size: clamp(40px, 5vw, 60px);
+  margin-top: -40px;
+  font-size: clamp(36px, 4vw, 52px);
   font-weight: 700;
 }
 
 /* ===== LEGAL ===== */
 .legal {
-  margin-top: 40px;
+  margin-top: 35px;
   max-width: 550px;
-  font-size: clamp(12px, 1.5vw, 18px);
-  line-height: 1.15;
+  font-size: clamp(14px, 1.8vw, 20px);
+  font-weight: 700; /* agora bold */
+  line-height: 1.2;
   text-align: center;
 }
 
 /* ===== CUPOM BOX ===== */
 .cupom-box {
-  margin-top: 20px;
+  margin-top: 25px;
   width: 600px;
   height: 140px;
   background: #16A7E0;
@@ -158,7 +160,7 @@ body {
   width: 100%;
   font-weight: 900;
   color: #ffffff;
-  font-size: clamp(40px, 5vw, 80px);
+  font-size: clamp(36px, 5vw, 70px);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -221,7 +223,7 @@ body {
 
   <div class="rodape">
     <div class="uf upper">{{UF}}</div>
-	<div class="uf upper">{{URN}}</div>
+    <div class="uf upper">{{URN}}</div>
     <div class="segmento-label upper">SEGMENTO DE CLIENTES:</div>
     <div class="segmento-valor upper">{{SEGMENTO}}</div>
   </div>
