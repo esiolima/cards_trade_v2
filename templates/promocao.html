@@ -3,41 +3,9 @@
 <head>
 <meta charset="UTF-8" />
 <title>Promoção</title>
-
 <style>
-@font-face {
-  font-family: 'Inter';
-  src: url('../fonts/Inter-Regular.ttf') format('truetype');
-  font-weight: 400;
-}
-@font-face {
-  font-family: 'Inter';
-  src: url('../fonts/Inter-Bold.ttf') format('truetype');
-  font-weight: 700;
-}
-@font-face {
-  font-family: 'Inter';
-  src: url('../fonts/Inter-Black.ttf') format('truetype');
-  font-weight: 900;
-}
+/* mesmas fontes */
 
-* {
-  box-sizing: border-box;
-  font-family: Inter, sans-serif;
-}
-
-body {
-  margin: 0;
-  background: transparent;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.upper { text-transform: uppercase; }
-.text-wrap { text-align: center; }
-
-/* ================= CARD ================= */
 .card {
   width: 1400px;
   height: 2115px;
@@ -47,95 +15,30 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 0 40px;
-  position: relative;
+  padding: 0 60px;
   overflow: hidden;
-}
-
-/* ===== SELO ===== */
-.selo {
-  position: absolute;
-  top: 40px;
-  left: 40px;
-  width: 240px;
-}
-
-/* ===== LOGO ===== */
-.logo {
-  margin-top: 120px;
-}
-.logo img {
-  max-height: 320px;
-  max-width: 800px;
-  object-fit: contain;
-}
-
-/* ===== TÍTULO PROMO ===== */
-.tipo {
-  margin-top: 80px;
-  background: #F36F21;
-  padding: 40px 120px;
-  border-radius: 200px;
-  font-size: 120px;
-  font-weight: 900;
-  color: #ffffff;
-}
-
-/* ===== CONDIÇÃO ===== */
-.condicao {
-  margin-top: 60px;
-  max-width: 1100px;
-  font-size: clamp(36px, 5vw, 60px);
-  font-weight: 400;
-  line-height: 1.15;
-  text-align: center;
-}
-
-/* ===== VALOR (AJUSTÁVEL) ===== */
-.valor-container {
-  margin-top: 200px;
-  width: 1200px;
-  height: 260px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
 }
 
 .valor {
+  margin-top: 80px;
+  font-size: clamp(120px, 14vw, 220px);
   font-weight: 900;
-  color: #1B3A6D;
-  white-space: nowrap;
-  overflow: hidden;
+  text-align: center;
 }
 
-/* ===== LEGAL ===== */
+.complemento {
+  margin-top: 30px;
+  max-width: 1120px;
+  font-size: clamp(48px, 6vw, 72px);
+  font-weight: 400;
+  text-align: center;
+}
+
 .legal {
   margin-top: 60px;
-  font-size: 36px;
-  text-align: center;
-}
-
-/* ===== RODAPÉ ===== */
-.rodape {
-  margin-top: auto;
-  margin-bottom: 60px;
-  text-align: center;
-}
-
-.uf {
-  font-size: 48px;
+  font-size: 44px;
   font-weight: 700;
-}
-
-.segmento-label {
-  margin-top: 24px;
-  font-size: 36px;
-}
-
-.segmento-valor {
-  font-size: 50px;
-  font-weight: 700;
+  text-align: center;
 }
 </style>
 </head>
@@ -143,51 +46,12 @@ body {
 <body>
 <div class="card">
 
-  {{SELO}}
+  <div class="valor upper text-wrap">{{VALOR}}</div>
 
-  <div class="logo">
-    <img src="{{LOGO}}" alt="Logo">
-  </div>
+  <div class="complemento upper text-wrap">{{COMPLEMENTO}}</div>
 
-  <div class="tipo upper">PROMOÇÃO</div>
-
-  <div class="condicao upper text-wrap">
-    {{TEXTO}}
-  </div>
-
-  <div class="valor-container">
-    <div class="valor upper" id="valorTexto">
-      {{VALOR}}
-    </div>
-  </div>
-
-  <div class="legal upper text-wrap">
-    {{LEGAL}}
-  </div>
-
-  <div class="rodape">
-    <div class="uf upper">{{UF}}</div>
-    <div class="segmento-label upper">SEGMENTO DE CLIENTES:</div>
-    <div class="segmento-valor upper">{{SEGMENTO}}</div>
-  </div>
+  <div class="legal upper text-wrap">{{LEGAL}}</div>
 
 </div>
-
-<script>
-function autoFitValor() {
-  const el = document.getElementById("valorTexto");
-
-  let fontSize = 180; // começa grande
-  el.style.fontSize = fontSize + "px";
-
-  while (el.scrollWidth > el.clientWidth && fontSize > 50) {
-    fontSize -= 2;
-    el.style.fontSize = fontSize + "px";
-  }
-}
-
-window.onload = autoFitValor;
-</script>
-
 </body>
 </html>
