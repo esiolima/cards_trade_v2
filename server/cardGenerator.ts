@@ -65,6 +65,34 @@ function upper(value: any): string {
   return String(value ?? "").toUpperCase().trim();
 }
 
+/* 🔥 NOVA FUNÇÃO PARA NORMALIZAR PERCENTUAL */
+function normalizePercentage(valor: any): string {
+  if (valor === null || valor === undefined) return "";
+
+  let texto = String(valor).replace(",", ".");
+
+  // Remove tudo que não for número ou ponto
+  texto = texto.replace(/[^0-9.]/g, "");
+
+  if (!texto) return "";
+
+  let numero = parseFloat(texto);
+
+  if (isNaN(numero)) return "";
+
+  // Se vier 0.10 vira 10
+  if (numero > 0 && numero < 1) {
+    numero = numero * 100;
+  }
+
+  // Remove casas decimais desnecessárias
+  if (Number.isInteger(numero)) {
+    return `${numero}%`;
+  }
+
+  return `${Number(numero.toFixed(2))}%`;
+}
+
 function imageToBase64(imagePath: string): string {
   if (!fs.existsSync(imagePath)) return "";
   const ext = path.extname(imagePath).replace(".", "");
@@ -111,12 +139,12 @@ export class CardGenerator extends EventEmitter {
       const templatePath = path.join(TEMPLATES_DIR, `${tipo}.html`);
       let html = fs.readFileSync(templatePath, "utf8");
 
-      // 🔹 LOGO
+      /* ================= LOGO ================= */
       const logoPath = path.join(LOGOS_DIR, row.segmento || "");
       const logoBase64 = imageToBase64(logoPath);
       html = html.replaceAll("{{LOGO}}", logoBase64);
 
-      // 🔹 SELO
+      /* ================= SELO ================= */
       let seloBase64 = "";
       if (row.selo) {
         const seloFile =
@@ -132,9 +160,22 @@ export class CardGenerator extends EventEmitter {
       }
       html = html.replaceAll("{{SELO}}", seloBase64);
 
-      // 🔹 TEXTOS
+      /* ================= VALOR ================= */
+
+      let valorFinal = "";
+
+      if (tipo === "promocao") {
+        // PROMO mantém exatamente como veio
+        valorFinal = String(row.valor ?? "");
+      } else {
+        // Outros tipos viram percentual limpo
+        valorFinal = normalizePercentage(row.valor);
+      }
+
+      /* ================= TEXTOS ================= */
+
       html = html.replaceAll("{{TEXTO}}", upper(row.texto));
-      html = html.replaceAll("{{VALOR}}", String(row.valor ?? ""));
+      html = html.replaceAll("{{VALOR}}", valorFinal);
       html = html.replaceAll("{{COMPLEMENTO}}", upper(row.complemento));
       html = html.replaceAll("{{LEGAL}}", upper(row.legal));
       html = html.replaceAll("{{UF}}", upper(row.uf));
