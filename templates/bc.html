@@ -66,16 +66,16 @@ body {
 
 /* LOGO */
 .logo {
-  margin-top: 60px;          /* mais respiro superior */
-  height: 220px;             /* área fixa maior */
+  margin-top: 60px;
+  height: 220px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .logo img {
-  max-height: 220px;         /* imagem pode ocupar toda altura */
-  max-width: 520px;          /* mais largura disponível */
+  max-height: 220px;
+  max-width: 520px;
   object-fit: contain;
 }
 
@@ -92,7 +92,7 @@ body {
 
 /* BENEFÍCIO */
 .beneficio {
-  margin-top: 70px;
+  margin-top: 50px;
   text-align: center;
 }
 
@@ -100,21 +100,29 @@ body {
   display: flex;
   justify-content: center;
   align-items: flex-end;
+  width: 100%;
+  padding: 0 30px;
+  margin-bottom: 20px;
 }
 
 .numero {
   font-weight: 900;
-  font-size: 240px;
+  font-size: clamp(120px, 25vw, 240px);
+  line-height: 0.8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .percent {
   font-weight: 900;
-  font-size: 240px;
+  font-size: clamp(120px, 25vw, 240px);
   margin-left: 6px;
+  line-height: 0.8;
 }
 
 .desconto {
-  margin-top: -30px;
+  margin-top: 0px;
   font-weight: 700;
   font-size: 46px;
 }
@@ -130,9 +138,27 @@ body {
   word-break: break-word;
 }
 
-/* LEGAL */
+/* AREA DE ESPAÇAMENTO DINÂMICO */
+.espaco-flexivel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly; /* Garante que o elemento legal fique equidistante */
+  align-items: center;
+  width: 100%;
+}
+
+/* COMPLEMENTO E LEGAL */
+.complemento {
+  text-align: center;
+  font-weight: 400;
+  font-size: 28px;
+  max-width: 550px;
+  line-height: 1.15;
+  word-break: break-word;
+}
+
 .legal {
-  margin-top: 40px;
   text-align: center;
   font-size: 18px;
   max-width: 550px;
@@ -142,7 +168,6 @@ body {
 
 /* RODAPÉ */
 .rodape {
-  margin-top: auto;
   margin-bottom: 30px;
   text-align: center;
 }
@@ -187,9 +212,10 @@ body {
       <div class="desconto">DE DESCONTO</div>
     </div>
 
-    <div class="texto">{{COMPLEMENTO}}</div>
-
-    <div class="legal">{{LEGAL}}</div>
+    <div class="espaco-flexivel">
+      <div class="complemento">{{COMPLEMENTO}}</div>
+      <div class="legal">{{LEGAL}}</div>
+    </div>
 
     <div class="rodape">
       <div class="uf">{{UF}}</div>
