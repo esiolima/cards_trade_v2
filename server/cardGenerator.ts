@@ -8,8 +8,8 @@ import { EventEmitter } from "events";
 const OUTPUT_DIR = path.join(process.cwd(), "output");
 const TMP_DIR = path.join(process.cwd(), "tmp");
 const TEMPLATES_DIR = path.join(process.cwd(), "templates");
-const SELOS_DIR = path.join(process.cwd(), "selos");
 const LOGOS_DIR = path.join(process.cwd(), "logos");
+const SELOS_DIR = path.join(process.cwd(), "selos");
 
 interface CardData {
   ordem?: string;
@@ -18,11 +18,12 @@ interface CardData {
   valor?: any;
   complemento?: string;
   legal?: string;
-  uf?: string;
+  categoria?: string;
+  logo?: string;
   segmento?: string;
   cupom?: string;
   selo?: string;
-  categoria?: string;
+  uf?: string;
   urn?: string;
 }
 
@@ -61,36 +62,8 @@ function normalizeType(tipo: string): string {
   return "";
 }
 
-function upper(value: any): string {
-  return String(value ?? "").toUpperCase().trim();
-}
-
-/* 🔥 NOVA FUNÇÃO PARA NORMALIZAR PERCENTUAL */
-function normalizePercentage(valor: any): string {
-  if (valor === null || valor === undefined) return "";
-
-  let texto = String(valor).replace(",", ".");
-
-  // Remove tudo que não for número ou ponto
-  texto = texto.replace(/[^0-9.]/g, "");
-
-  if (!texto) return "";
-
-  let numero = parseFloat(texto);
-
-  if (isNaN(numero)) return "";
-
-  // Se vier 0.10 vira 10
-  if (numero > 0 && numero < 1) {
-    numero = numero * 100;
-  }
-
-  // Remove casas decimais desnecessárias
-  if (Number.isInteger(numero)) {
-    return `${numero}%`;
-  }
-
-  return `${Number(numero.toFixed(2))}%`;
+function sanitizePercentage(valor: any): string {
+  return String(valor ?? "").replace(/\D/g, "");
 }
 
 function imageToBase64(imagePath: string): string {
@@ -122,6 +95,12 @@ export class CardGenerator extends EventEmitter {
   ): Promise<string> {
     if (!this.browser) throw new Error("Generator not initialized");
 
+    // 🔥 LIMPA OUTPUT ANTES DE GERAR NOVOS PDFs
+    const oldFiles = fs.readdirSync(OUTPUT_DIR);
+    for (const file of oldFiles) {
+      fs.unlinkSync(path.join(OUTPUT_DIR, file));
+    }
+
     const workbook = xlsx.readFile(excelFilePath);
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const rows = xlsx.utils.sheet_to_json<CardData>(sheet, { defval: "" });
@@ -139,55 +118,55 @@ export class CardGenerator extends EventEmitter {
       const templatePath = path.join(TEMPLATES_DIR, `${tipo}.html`);
       let html = fs.readFileSync(templatePath, "utf8");
 
-      /* ================= LOGO ================= */
-      const logoPath = path.join(LOGOS_DIR, row.segmento || "");
-      const logoBase64 = imageToBase64(logoPath);
-      html = html.replaceAll("{{LOGO}}", logoBase64);
+      let valorFinal =
+        tipo === "promocao"
+          ? String(row.valor ?? "")
+          : sanitizePercentage(row.valor);
 
-      /* ================= SELO ================= */
       let seloBase64 = "";
       if (row.selo) {
         const seloFile =
-          row.selo.toLowerCase() === "nova"
-            ? "nova.png"
-            : row.selo.toLowerCase() === "renovada"
-            ? "renovada.png"
+          row.selo.toLowerCase().includes("nova")
+            ? "acaonova.png"
+            : row.selo.toLowerCase().includes("renovada")
+            ? "acaorenovada.png"
             : "";
 
         if (seloFile) {
           seloBase64 = imageToBase64(path.join(SELOS_DIR, seloFile));
         }
       }
-      html = html.replaceAll("{{SELO}}", seloBase64);
 
-      /* ================= VALOR ================= */
-
-      let valorFinal = "";
-
-      if (tipo === "promocao") {
-        // PROMO mantém exatamente como veio
-        valorFinal = String(row.valor ?? "");
-      } else {
-        // Outros tipos viram percentual limpo
-        valorFinal = normalizePercentage(row.valor);
+      let logoBase64 = "";
+      if (row.logo) {
+        logoBase64 = imageToBase64(path.join(LOGOS_DIR, row.logo));
       }
 
-      /* ================= TEXTOS ================= */
+      const ufFinal = row.uf ? `UF: ${row.uf}` : "";
+      const urnFinal = row.urn ? `URN: ${row.urn}` : "";
 
-      html = html.replaceAll("{{TEXTO}}", upper(row.texto));
-      html = html.replaceAll("{{VALOR}}", valorFinal);
-      html = html.replaceAll("{{COMPLEMENTO}}", upper(row.complemento));
-      html = html.replaceAll("{{LEGAL}}", upper(row.legal));
-      html = html.replaceAll("{{UF}}", upper(row.uf));
-      html = html.replaceAll("{{SEGMENTO}}", upper(row.segmento));
-      html = html.replaceAll("{{CUPOM}}", upper(row.cupom));
-      html = html.replaceAll("{{URN}}", upper(row.urn));
+      html = html
+        .replaceAll("{{TEXTO}}", String(row.texto ?? ""))
+        .replaceAll("{{VALOR}}", valorFinal)
+        .replaceAll("{{COMPLEMENTO}}", String(row.complemento ?? ""))
+        .replaceAll("{{LEGAL}}", String(row.legal ?? ""))
+        .replaceAll("{{SEGMENTO}}", String(row.segmento ?? ""))
+        .replaceAll("{{CUPOM}}", String(row.cupom ?? ""))
+        .replaceAll("{{UF}}", ufFinal)
+        .replaceAll("{{URN}}", urnFinal)
+        .replaceAll("{{SELO}}", seloBase64)
+        .replaceAll("{{LOGO}}", logoBase64);
 
       const tmpHtmlPath = path.join(TMP_DIR, `card_${processed + 1}.html`);
       fs.writeFileSync(tmpHtmlPath, html);
 
       const page = await this.browser.newPage();
-      await page.setViewport({ width: 700, height: 1058 });
+
+      await page.setViewport({
+        width: 700,
+        height: 1058,
+        deviceScaleFactor: 1,
+      });
 
       await page.goto(`file://${tmpHtmlPath}`, {
         waitUntil: "networkidle0",
@@ -206,6 +185,7 @@ export class CardGenerator extends EventEmitter {
         width: "700px",
         height: "1058px",
         printBackground: true,
+        margin: { top: 0, bottom: 0, left: 0, right: 0 },
       });
 
       await page.close();
