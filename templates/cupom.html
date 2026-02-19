@@ -24,6 +24,7 @@
 * {
   box-sizing: border-box;
   font-family: Inter, sans-serif;
+  text-transform: uppercase; /* Força caixa alta em tudo */
 }
 
 body {
@@ -33,9 +34,6 @@ body {
   justify-content: center;
   align-items: center;
 }
-
-.upper { text-transform: uppercase; }
-.text-wrap { text-align: center; }
 
 /* ================= CARD ================= */
 .card {
@@ -69,17 +67,17 @@ body {
   object-fit: contain;
 }
 
-/* ===== LOGO ===== */
+/* ===== LOGO - Reduzido para 70% (154px) ===== */
 .logo {
   margin-top: 60px;
-  height: 220px;
+  height: 154px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .logo img {
-  max-height: 220px;
+  max-height: 154px;
   max-width: 520px;
   object-fit: contain;
 }
@@ -130,7 +128,7 @@ body {
   flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: space-evenly; /* Garante que o elemento legal fique equidistante */
+  justify-content: space-evenly;
   align-items: center;
   width: 100%;
 }
@@ -224,34 +222,34 @@ body {
     <img src="{{LOGO}}" alt="Logo">
   </div>
 
-  <div class="condicao upper text-wrap">{{TEXTO}}</div>
+  <div class="condicao">{{TEXTO}}</div>
 
   <div class="percentual">
     <div class="numero">{{VALOR}}</div>
     <div class="percent">%</div>
   </div>
 
-  <div class="desconto upper">DE DESCONTO</div>
+  <div class="desconto">DE DESCONTO</div>
 
   <div class="espaco-flexivel">
-    <div class="complemento upper">{{COMPLEMENTO}}</div>
-    <div class="legal upper text-wrap">{{LEGAL}}</div>
+    <div class="complemento">{{COMPLEMENTO}}</div>
+    <div class="legal">{{LEGAL}}</div>
   </div>
 
   <div class="cupom-box">
     <div class="cupom-label">
-      <span class="upper">CUPOM</span>
+      <span>CUPOM</span>
     </div>
-    <div class="cupom-codigo upper">
+    <div class="cupom-codigo">
       {{CUPOM}}
     </div>
   </div>
 
   <div class="rodape">
-    <div class="uf upper">{{UF}}</div>
-	<div class="uf upper">{{URN}}</div>
-    <div class="segmento-label upper">SEGMENTO DE CLIENTES:</div>
-    <div class="segmento-valor upper">{{SEGMENTO}}</div>
+    <div class="uf">{{UF}}</div>
+	<div class="uf">{{URN}}</div>
+    <div class="segmento-label">SEGMENTO DE CLIENTES:</div>
+    <div class="segmento-valor">{{SEGMENTO}}</div>
   </div>
 
 </div>
