@@ -37,7 +37,6 @@ body {
 .upper { text-transform: uppercase; }
 .text-wrap { text-align: center; }
 
-/* ================= CARD ================= */
 .card {
   width: 1400px;
   height: 2115px;
@@ -51,17 +50,13 @@ body {
   overflow: hidden;
 }
 
-/* ===== LOGO ===== */
-.logo {
-  margin-top: 90px;
-}
+.logo { margin-top: 90px; }
 .logo img {
   max-height: 320px;
   max-width: 800px;
   object-fit: contain;
 }
 
-/* ===== MECÂNICA ===== */
 .condicao {
   margin-top: 70px;
   max-width: 1120px;
@@ -71,7 +66,6 @@ body {
   text-align: center;
 }
 
-/* ===== BENEFÍCIO ===== */
 .percentual {
   display: flex;
   align-items: flex-end;
@@ -96,16 +90,23 @@ body {
   font-weight: 700;
 }
 
-/* ===== LEGAL ===== */
-.legal {
-  margin-top: 80px;
-  max-width: 1100px;
-  font-size: clamp(24px, 3vw, 36px);
+.complemento {
+  margin-top: 30px;
+  max-width: 1120px;
+  font-size: clamp(36px, 5vw, 56px);
+  font-weight: 400;
   line-height: 1.15;
   text-align: center;
 }
 
-/* ===== CUPOM BOX ===== */
+.legal {
+  margin-top: 60px;
+  max-width: 1100px;
+  font-size: 44px;
+  font-weight: 700;
+  text-align: center;
+}
+
 .cupom-box {
   margin-top: 40px;
   width: 1200px;
@@ -124,7 +125,7 @@ body {
 
 .cupom-label span {
   transform: rotate(-90deg);
-  font-size: clamp(40px, 4.8vw, 57.6px);
+  font-size: 60px;
   font-weight: 700;
   color: #ffffff;
 }
@@ -134,14 +135,13 @@ body {
   align-items: center;
   justify-content: center;
   padding: 0 40px;
+  font-size: clamp(100px, 12vw, 160px);
   font-weight: 900;
   color: #ffffff;
   white-space: nowrap;
   overflow: hidden;
-  text-align: center;
 }
 
-/* ===== RODAPÉ ===== */
 .rodape {
   margin-top: auto;
   margin-bottom: 60px;
@@ -149,17 +149,17 @@ body {
 }
 
 .uf {
-  font-size: clamp(32px, 4vw, 48px);
+  font-size: 48px;
   font-weight: 700;
 }
 
 .segmento-label {
   margin-top: 24px;
-  font-size: clamp(24px, 3vw, 36px);
+  font-size: 36px;
 }
 
 .segmento-valor {
-  font-size: clamp(32px, 4vw, 50px);
+  font-size: 50px;
   font-weight: 700;
 }
 </style>
@@ -181,13 +181,15 @@ body {
 
   <div class="desconto upper">DE DESCONTO</div>
 
+  <div class="complemento upper text-wrap">{{COMPLEMENTO}}</div>
+
   <div class="legal upper text-wrap">{{LEGAL}}</div>
 
   <div class="cupom-box">
     <div class="cupom-label">
       <span class="upper">CUPOM</span>
     </div>
-    <div class="cupom-codigo upper" id="cupomCodigo">
+    <div class="cupom-codigo upper">
       {{CUPOM}}
     </div>
   </div>
@@ -199,21 +201,5 @@ body {
   </div>
 
 </div>
-
-<script>
-function autoFitCupom() {
-  const el = document.getElementById("cupomCodigo");
-  let fontSize = 160; 
-  el.style.fontSize = fontSize + "px";
-
-  while (el.scrollWidth > el.clientWidth && fontSize > 40) {
-    fontSize -= 2;
-    el.style.fontSize = fontSize + "px";
-  }
-}
-
-window.onload = autoFitCupom;
-</script>
-
 </body>
 </html>
