@@ -1,181 +1,150 @@
-
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8" />
-<title>Promoção</title>
+<title>Queda de Preço</title>
 
 <style>
+/* Fontes importadas do Google Fonts para garantir a visualização */
 @font-face {
   font-family: 'Inter';
-  src: url('../fonts/Inter-Regular.ttf') format('truetype');
+  src: url('https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKOBc.woff2' ) format('woff2');
   font-weight: 400;
 }
 @font-face {
   font-family: 'Inter';
-  src: url('../fonts/Inter-Bold.ttf') format('truetype');
+  src: url('https://fonts.gstatic.com/s/inter/v12/UcC73FwrK3iLTeHuS_fvQtMwCp50KnMa1ZL7W0Q5nw.woff2' ) format('woff2');
   font-weight: 700;
 }
 @font-face {
   font-family: 'Inter';
-  src: url('../fonts/Inter-Black.ttf') format('truetype');
+  src: url('https://fonts.gstatic.com/s/inter/v12/UcC73FwrK3iLTeHuS_fvQtMwCp50KnMa1ZL7W0Q5nw.woff2' ) format('woff2');
   font-weight: 900;
 }
 
-* {
+* { 
   box-sizing: border-box;
   font-family: Inter, sans-serif;
 }
 
 body {
   margin: 0;
-  background: transparent;
+  background: #f0f0f0;
   display: flex;
   justify-content: center;
   align-items: center;
+  min-height: 100vh;
+  padding: 20px;
 }
 
-.upper { text-transform: uppercase; }
-.text-wrap { text-align: center; }
-
-/* ================= CARD ================= */
 .card {
   width: 700px;
   height: 1057.5px;
-  border: 6px solid #F2C94C;
-  border-radius: 48px;
   background: #ffffff;
+  border: 6px solid #F2C94C;
+  border-radius: 70px;
   display: flex;
   flex-direction: column;
   align-items: center;
+  color: #1F3C6E;
   padding: 0 20px;
   overflow: hidden;
   position: relative;
-  color: #1F3C6E;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
 }
 
-/* ===== SELO ===== */
+/* SELO */
 .selo {
   position: absolute;
   top: 0;
   left: 0;
   width: 100px;
   height: 100px;
-  z-index: 20; /* garante que fique acima da moldura */
 }
-
 .selo img {
   width: 100%;
   height: 100%;
   object-fit: contain;
 }
 
-/* ===== LOGO ===== */
+/* LOGO */
 .logo {
-  margin-top: 60px;          /* mais respiro superior */
-  height: 220px;             /* área fixa maior */
+  margin-top: 60px;
+  height: 220px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .logo img {
-  max-height: 220px;         /* imagem pode ocupar toda altura */
-  max-width: 520px;          /* mais largura disponível */
+  max-height: 220px;
+  max-width: 520px;
   object-fit: contain;
 }
 
-/* ===== MECÂNICA ===== */
-.condicao {
+/* TÍTULO */
+.titulo {
   margin-top: 35px;
-  max-width: 560px;
-  font-size: clamp(18px, 2.5vw, 28px);
-  font-weight: 400;
-  line-height: 1.15;
+  background: #ff7e00;
+  color: #ffffff;
+  padding: 20px 70px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 54px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* BENEFÍCIO */
+.beneficio {
+  margin-top: 70px;
   text-align: center;
 }
 
-/* ===== BENEFÍCIO ===== */
 .percentual {
   display: flex;
-  align-items: flex-end;
   justify-content: center;
-  margin-top: -10px;
-  width: 100%;
-  padding: 0 30px;
+  align-items: flex-end;
 }
 
-.numero,
-.percent {
+.numero, .percent {
   font-weight: 900;
-  font-size: clamp(130px, 18vw, 230px);
-  line-height: 0.95;
-}
-
-.percent {
-  margin-left: 6px;
+  font-size: 240px;
+  line-height: 0.8;
 }
 
 .desconto {
-  margin-top: -40px;
-  font-size: clamp(36px, 4vw, 52px);
+  margin-top: 40px; /* Espaço entre o valor e o texto de desconto */
   font-weight: 700;
+  font-size: 46px;
 }
 
-/* ===== LEGAL ===== */
-.legal {
-  margin-top: 35px;
-  max-width: 550px;
-  font-size: clamp(14px, 1.8vw, 20px);
-  font-weight: 700; /* agora bold */
-  line-height: 1.2;
+/* TEXTO */
+.texto {
+  margin-top: 30px;
   text-align: center;
+  font-weight: 400;
+  font-size: 28px;
+  max-width: 550px;
+  line-height: 1.15;
 }
 
-/* ===== CUPOM BOX ===== */
-.cupom-box {
-  margin-top: 25px;
-  width: 600px;
-  height: 140px;
-  background: #16A7E0;
-  border-radius: 20px;
-  display: grid;
-  grid-template-columns: 90px 1fr;
-  overflow: hidden;
-}
-
-.cupom-label {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.cupom-label span {
-  transform: rotate(-90deg);
-  font-size: clamp(20px, 2.4vw, 28px);
-  font-weight: 700;
-  color: #ffffff;
-}
-
-.cupom-codigo {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 20px;
-  width: 100%;
-  font-weight: 900;
-  color: #ffffff;
-  font-size: clamp(36px, 5vw, 70px);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* ===== RODAPÉ ===== */
+/* RODAPÉ E LEGAL */
 .rodape {
   margin-top: auto;
   margin-bottom: 30px;
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px; /* Espaçamento uniforme entre os elementos */
+}
+
+.legal {
+  font-size: 18px;
+  max-width: 550px;
+  line-height: 1.15;
+  margin-bottom: 10px;
 }
 
 .uf {
@@ -183,8 +152,11 @@ body {
   font-weight: 700;
 }
 
+.segmento-container {
+  margin-top: 5px;
+}
+
 .segmento-label {
-  margin-top: 12px;
   font-size: clamp(12px, 1.5vw, 18px);
 }
 
@@ -196,35 +168,44 @@ body {
 </head>
 
 <body>
-<div class="card">
+  <div class="card">
 
-  <div class="selo">
-    <img src="{{SELO}}" alt="Selo">
+    <div class="selo">
+      <img src="{{SELO}}" alt="Selo">
+    </div>
+
+    <div class="logo">
+      <img src="{{LOGO}}" alt="Logo">
+    </div>
+
+    <div class="titulo">PROMOÇÃO</div>
+      
+    <div class="texto">{{TEXTO}}</div>
+
+    <div class="beneficio">
+      <div class="percentual">
+        <div class="numero">{{VALOR}}</div>
+        <div class="percent">%</div>
+      </div>
+      <div class="desconto">DE DESCONTO</div>
+    </div>
+
+    <div class="texto">{{COMPLEMENTO}}</div>
+
+    <div class="rodape">
+      <div class="legal">{{LEGAL}}</div>
+      
+      <div class="uf-container">
+        <div class="uf">{{UF}}</div>
+        <div class="uf">{{URN}}</div>
+      </div>
+
+      <div class="segmento-container">
+        <div class="segmento-label">SEGMENTO DE CLIENTES:</div>
+        <div class="segmento-valor">{{SEGMENTO}}</div>
+      </div>
+    </div>
+
   </div>
-
-  <div class="logo">
-    <img src="{{LOGO}}" alt="Logo">
-  </div>
-
-  <div class="condicao upper text-wrap">{{TEXTO}}</div>
-
-  <div class="percentual">
-    <div class="numero upper">{{VALOR}}</div>
-  </div>
-	
-  <div class="desconto upper">DE DESCONTO</div>
-	
-  <div class="texto">{{COMPLEMENTO}}</div>
-
-  <div class="legal upper text-wrap">{{LEGAL}}</div>
-
-  <div class="rodape">
-    <div class="uf upper">{{UF}}</div>
-    <div class="uf upper">{{URN}}</div>
-    <div class="segmento-label upper">SEGMENTO DE CLIENTES:</div>
-    <div class="segmento-valor upper">{{SEGMENTO}}</div>
-  </div>
-
-</div>
 </body>
 </html>
