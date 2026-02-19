@@ -50,7 +50,7 @@ body {
   padding: 0 20px;
   overflow: hidden;
   position: relative;
-  color: #1F3C6E; /* TODOS TEXTOS AGORA NESSA COR */
+  color: #1F3C6E;
 }
 
 /* ===== SELO ===== */
@@ -71,16 +71,16 @@ body {
 
 /* ===== LOGO ===== */
 .logo {
-  margin-top: 60px;          /* mais respiro superior */
-  height: 220px;             /* área fixa maior */
+  margin-top: 60px;
+  height: 220px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .logo img {
-  max-height: 220px;         /* imagem pode ocupar toda altura */
-  max-width: 520px;          /* mais largura disponível */
+  max-height: 220px;
+  max-width: 520px;
   object-fit: contain;
 }
 
@@ -102,13 +102,17 @@ body {
   margin-top: -10px;
   width: 100%;
   padding: 0 30px;
+  margin-bottom: 20px;
 }
 
 .numero,
 .percent {
   font-weight: 900;
-  font-size: clamp(150px, 20vw, 270px);
+  font-size: clamp(120px, 25vw, 270px);
   line-height: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .percent {
@@ -116,14 +120,30 @@ body {
 }
 
 .desconto {
-  margin-top: -50px;
+  margin-top: 0px;
   font-size: clamp(40px, 5vw, 60px);
   font-weight: 700;
 }
 
-/* ===== LEGAL ===== */
+/* AREA DE ESPAÇAMENTO DINÂMICO */
+.espaco-flexivel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly; /* Garante que o elemento legal fique equidistante */
+  align-items: center;
+  width: 100%;
+}
+
+/* ===== COMPLEMENTO E LEGAL ===== */
+.complemento {
+  max-width: 550px;
+  font-size: 24px;
+  line-height: 1.15;
+  text-align: center;
+}
+
 .legal {
-  margin-top: 40px;
   max-width: 550px;
   font-size: clamp(12px, 1.5vw, 18px);
   line-height: 1.15;
@@ -132,7 +152,8 @@ body {
 
 /* ===== CUPOM BOX ===== */
 .cupom-box {
-  margin-top: 20px;
+  margin-top: 10px;
+  margin-bottom: 10px;
   width: 600px;
   height: 140px;
   background: #16A7E0;
@@ -171,7 +192,6 @@ body {
 
 /* ===== RODAPÉ ===== */
 .rodape {
-  margin-top: auto;
   margin-bottom: 30px;
   text-align: center;
 }
@@ -213,7 +233,10 @@ body {
 
   <div class="desconto upper">DE DESCONTO</div>
 
-  <div class="legal upper text-wrap">{{LEGAL}}</div>
+  <div class="espaco-flexivel">
+    <div class="complemento upper">{{COMPLEMENTO}}</div>
+    <div class="legal upper text-wrap">{{LEGAL}}</div>
+  </div>
 
   <div class="cupom-box">
     <div class="cupom-label">
