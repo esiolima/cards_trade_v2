@@ -1,143 +1,114 @@
+import "dotenv/config";
 import express from "express";
+import { createServer } from "http";
+import net from "net";
 import path from "path";
 import fs from "fs";
-import multer from "multer";
-import { CardGenerator } from "../cardGenerator";
+import { createExpressMiddleware } from "@trpc/server/adapters/express";
+import { Server as SocketIOServer } from "socket.io";
+import { registerOAuthRoutes } from "./oauth";
+import { appRouter } from "../routers";
+import { createContext } from "./context";
+import { serveStatic, setupVite } from "./vite";
+import { setupUploadRoute } from "../uploadHandler";
+import { setupLogoUploadRoute } from "../logoUploadHandler";
 
-const app = express();
-app.use(express.json());
-
-const PORT = process.env.PORT || 3000;
-
-const BASE_DIR = process.cwd();
-const LOGOS_DIR = path.join(BASE_DIR, "logos");
-const OUTPUT_DIR = path.join(BASE_DIR, "output");
-const PUBLIC_DIR = path.join(BASE_DIR, "dist/public");
-
-// =============================
-// GARANTE PASTAS
-// =============================
-if (!fs.existsSync(LOGOS_DIR)) {
-  fs.mkdirSync(LOGOS_DIR, { recursive: true });
-}
-
-if (!fs.existsSync(OUTPUT_DIR)) {
-  fs.mkdirSync(OUTPUT_DIR, { recursive: true });
-}
-
-// =============================
-// SERVIR LOGOS ESTÁTICOS
-// =============================
-app.use("/logos", express.static(LOGOS_DIR));
-
-// =============================
-// MULTER
-// =============================
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, LOGOS_DIR);
-  },
-  filename: function (req, file, cb) {
-    cb(null, file.originalname);
-  },
-});
-
-const upload = multer({ storage });
-
-// =============================
-// LISTAR LOGOS
-// =============================
-app.get("/api/logos", (req, res) => {
-  const files = fs
-    .readdirSync(LOGOS_DIR)
-    .filter((file) =>
-      file.match(/\.(png|jpg|jpeg|webp)$/i)
-    );
-
-  res.json(files);
-});
-
-// =============================
-// UPLOAD LOGO
-// =============================
-app.post("/api/logos", upload.single("logo"), (req, res) => {
-  res.json({ success: true });
-});
-
-// =============================
-// DELETAR LOGO (PROTEGE blank.png)
-// =============================
-app.delete("/api/logos/:name", (req, res) => {
-  const fileName = req.params.name;
-
-  if (fileName.toLowerCase() === "blank.png") {
-    return res.status(403).json({
-      error: "O arquivo blank.png não pode ser excluído.",
+function isPortAvailable(port: number): Promise<boolean> {
+  return new Promise(resolve => {
+    const server = net.createServer();
+    server.listen(port, () => {
+      server.close(() => resolve(true));
     });
-  }
-
-  const filePath = path.join(LOGOS_DIR, fileName);
-
-  if (!fs.existsSync(filePath)) {
-    return res.status(404).json({ error: "Arquivo não encontrado" });
-  }
-
-  fs.unlinkSync(filePath);
-
-  res.json({ success: true });
-});
-
-// =============================
-// GERAR CARDS
-// =============================
-app.post("/api/generate", upload.single("file"), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ error: "Arquivo não enviado" });
-    }
-
-    const generator = new CardGenerator();
-    await generator.initialize();
-
-    const zipPath = await generator.generateCards(req.file.path);
-
-    await generator.close();
-
-    res.json({ success: true });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Erro ao gerar cards" });
-  }
-});
-
-// =============================
-// DOWNLOAD ZIP
-// =============================
-app.get("/api/download", (req, res) => {
-  const zipPath = path.join(OUTPUT_DIR, "cards.zip");
-
-  if (!fs.existsSync(zipPath)) {
-    return res.status(404).json({ error: "Arquivo não encontrado" });
-  }
-
-  res.download(zipPath);
-});
-
-// =============================
-// SERVIR FRONTEND BUILDADO
-// =============================
-if (fs.existsSync(PUBLIC_DIR)) {
-  app.use(express.static(PUBLIC_DIR));
-
-  // SPA fallback (React Router)
-  app.get("*", (req, res) => {
-    res.sendFile(path.join(PUBLIC_DIR, "index.html"));
+    server.on("error", () => resolve(false));
   });
 }
 
-// =============================
-// START SERVER
-// =============================
-app.listen(PORT, () => {
-  console.log(`Servidor rodando na porta ${PORT}`);
-});
+async function findAvailablePort(startPort: number = 3000): Promise<number> {
+  for (let port = startPort; port < startPort + 20; port++) {
+    if (await isPortAvailable(port)) {
+      return port;
+    }
+  }
+  throw new Error(`No available port found starting from ${startPort}`);
+}
+
+async function startServer() {
+  const app = express();
+  const server = createServer(app);
+  const io = new SocketIOServer(server, {
+    cors: {
+      origin: "*",
+      methods: ["GET", "POST"],
+    },
+  });
+  // Configure body parser with larger size limit for file uploads
+  app.use(express.json({ limit: "50mb" }));
+  app.use(express.urlencoded({ limit: "50mb", extended: true }));
+  // OAuth callback under /api/oauth/callback
+  registerOAuthRoutes(app);
+  // tRPC API with Socket.io context
+  app.use(
+    "/api/trpc",
+    createExpressMiddleware({
+      router: appRouter,
+      createContext: async (opts) => createContext(opts, io),
+    })
+  );
+
+  // Socket.io connection handler
+  io.on("connection", (socket) => {
+    console.log(`Client connected: ${socket.id}`);
+
+    socket.on("join", (sessionId: string) => {
+      socket.join(sessionId);
+      console.log(`Client ${socket.id} joined session ${sessionId}`);
+    });
+
+    socket.on("disconnect", () => {
+      console.log(`Client disconnected: ${socket.id}`);
+    });
+  });
+
+  // Setup upload route
+  setupUploadRoute(app);
+  // Setup logo upload route
+  setupLogoUploadRoute(app);
+  // development mode uses Vite, production mode uses static files
+  if (process.env.NODE_ENV === "development") {
+    await setupVite(app, server);
+  } else {
+    serveStatic(app);
+  }
+
+  // Cleanup old files on startup
+  const uploadsDir = path.resolve("uploads");
+  const outputDir = path.resolve("output");
+  const tmpDir = path.resolve("tmp");
+
+  for (const dir of [uploadsDir, outputDir, tmpDir]) {
+    if (fs.existsSync(dir)) {
+      const files = fs.readdirSync(dir);
+      for (const file of files) {
+        try {
+          fs.unlinkSync(path.join(dir, file));
+        } catch (e) {
+          // Ignore cleanup errors
+        }
+      }
+    }
+  }
+
+  const preferredPort = parseInt(process.env.PORT || "3000");
+  const port = await findAvailablePort(preferredPort);
+
+  if (port !== preferredPort) {
+    console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
+  }
+
+  server.listen(port, () => {
+    console.log(`Server running on http://localhost:${port}/`);
+    console.log(`Socket.io ready for real-time updates`);
+  });
+}
+
+startServer().catch(console.error);
