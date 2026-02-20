@@ -95,7 +95,6 @@ export class CardGenerator extends EventEmitter {
   ): Promise<string> {
     if (!this.browser) throw new Error("Generator not initialized");
 
-    // 🔥 LIMPA OUTPUT ANTES DE GERAR NOVOS PDFs
     const oldFiles = fs.readdirSync(OUTPUT_DIR);
     for (const file of oldFiles) {
       fs.unlinkSync(path.join(OUTPUT_DIR, file));
@@ -123,14 +122,23 @@ export class CardGenerator extends EventEmitter {
           ? String(row.valor ?? "")
           : sanitizePercentage(row.valor);
 
+      // ✅ CORREÇÃO DEFINITIVA DO SELO
       let seloBase64 = "";
+
       if (row.selo) {
-        const seloFile =
-          row.selo.toLowerCase().includes("nova")
-            ? "acaonova.png"
-            : row.selo.toLowerCase().includes("renovada")
-            ? "acaorenovada.png"
-            : "";
+        const seloNormalized = String(row.selo)
+          .toLowerCase()
+          .trim()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "");
+
+        let seloFile = "";
+
+        if (seloNormalized === "nova") {
+          seloFile = "acaonova.png";
+        } else if (seloNormalized === "renovada") {
+          seloFile = "acaorenovada.png";
+        }
 
         if (seloFile) {
           seloBase64 = imageToBase64(path.join(SELOS_DIR, seloFile));
