@@ -1,103 +1,147 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
 <meta charset="UTF-8" />
-<title>Promoção</title>
+<meta name="viewport" content="width=700, initial-scale=1.0" />
 
 <style>
 @font-face {
   font-family: 'Inter';
-  src: url('https://fonts.gstatic.com/s/inter/v12/UcC73FwrK3iLTeHuS_fvQtMwCp50KnMa1ZL7W0Q5nw.woff2') format('woff2');
-  font-weight: 900;
+  src: url('../fonts/Inter-Regular.ttf') format('truetype');
+  font-weight: 400;
 }
 
-* { 
-  box-sizing: border-box;
-  font-family: Inter, sans-serif;
-  text-transform: uppercase;
+@font-face {
+  font-family: 'Inter';
+  src: url('../fonts/Inter-Bold.ttf') format('truetype');
+  font-weight: 700;
+}
+
+@font-face {
+  font-family: 'Inter';
+  src: url('../fonts/Inter-Black.ttf') format('truetype');
+  font-weight: 900;
 }
 
 body {
   margin: 0;
-  background: transparent;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  width: 700px;
+  height: 1058px;
+  font-family: 'Inter', sans-serif;
+  background: #ffffff;
 }
 
 .card {
-  width: 700px;
-  height: 1057.5px;
-  background: #ffffff;
-  border: 6px solid #F2C94C;
-  border-radius: 70px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  color: #1F3C6E;
-  padding: 0 20px;
-  overflow: hidden;
-  position: relative;
-}
-
-/* restante do seu CSS permanece igual */
-
-.percentual {
-  display: flex;
-  justify-content: center;
-  align-items: flex-end;
   width: 100%;
-  padding: 0 40px;
-  margin-bottom: 20px;
+  height: 100%;
+  border: 8px solid #e0b84b;
+  border-radius: 40px;
+  box-sizing: border-box;
+  padding: 40px;
+  position: relative;
   overflow: hidden;
 }
 
-.numero,
-.percent {
-  font-weight: 900;
-  font-size: 240px;
-  line-height: 0.8;
-  white-space: nowrap;
+.logo {
+  text-align: center;
+  margin-bottom: 40px;
 }
+
+.logo img {
+  max-width: 220px;
+  max-height: 120px;
+}
+
+.texto-topo {
+  text-align: center;
+  font-size: 28px;
+  font-weight: 600;
+  margin-bottom: 30px;
+  color: #2b4474;
+}
+
+.valor-container {
+  width: 100%;
+  height: 350px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.valor-texto {
+  font-weight: 900;
+  font-size: 220px;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+  color: #2b4474;
+}
+
+.legal {
+  text-align: center;
+  font-size: 22px;
+  margin-top: 40px;
+  color: #2b4474;
+}
+
+.rodape {
+  position: absolute;
+  bottom: 40px;
+  width: calc(100% - 80px);
+  text-align: center;
+  font-size: 18px;
+  color: #2b4474;
+}
+
 </style>
 </head>
 
 <body>
+
 <div class="card">
 
-  <div class="beneficio">
-    <div class="percentual" id="percentual">
-      <div class="numero" id="numero">{{VALOR}}</div>
-      <div class="percent" id="percent">%</div>
+  <div class="logo">
+    <img src="{{LOGO}}" alt="Logo" />
+  </div>
+
+  <div class="texto-topo">
+    {{TEXTO}}
+  </div>
+
+  <div class="valor-container" id="valor-container">
+    <div class="valor-texto" id="valor-texto">
+      {{VALOR}}
     </div>
+  </div>
+
+  <div class="legal">
+    {{LEGAL}}
+  </div>
+
+  <div class="rodape">
+    {{UF}} <br/>
+    {{URN}} <br/>
+    {{SEGMENTO}}
   </div>
 
 </div>
 
 <script>
-async function autoFitPercentual() {
-  await document.fonts.ready;
+window.addEventListener("load", function () {
+  const container = document.getElementById("valor-container");
+  const texto = document.getElementById("valor-texto");
 
-  const container = document.getElementById("percentual");
-  const numero = document.getElementById("numero");
-  const percent = document.getElementById("percent");
+  if (!container || !texto) return;
 
-  let fontSize = 240;
+  let fontSize = 220;
+  texto.style.fontSize = fontSize + "px";
 
-  numero.style.fontSize = fontSize + "px";
-  percent.style.fontSize = fontSize + "px";
-
-  while (container.scrollWidth > container.clientWidth && fontSize > 60) {
+  while (texto.scrollWidth > container.clientWidth && fontSize > 40) {
     fontSize -= 2;
-    numero.style.fontSize = fontSize + "px";
-    percent.style.fontSize = fontSize + "px";
+    texto.style.fontSize = fontSize + "px";
   }
-
-  // sinaliza que terminou
-  window.autoFitDone = true;
-}
-
-window.onload = autoFitPercentual;
+});
 </script>
 
 </body>
