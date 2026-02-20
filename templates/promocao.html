@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=700, initial-scale=1.0" />
 
 <style>
+
 @font-face {
   font-family: 'Inter';
   src: url('../fonts/Inter-Regular.ttf') format('truetype');
@@ -28,7 +29,7 @@ body {
   width: 700px;
   height: 1058px;
   font-family: 'Inter', sans-serif;
-  background: #ffffff;
+  background: #f3f3f3;
 }
 
 .card {
@@ -37,11 +38,26 @@ body {
   border: 8px solid #e0b84b;
   border-radius: 40px;
   box-sizing: border-box;
-  padding: 40px;
+  padding: 60px 40px;
   position: relative;
   overflow: hidden;
 }
 
+/* SELO */
+.selo {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  width: 120px;
+  height: 120px;
+}
+
+.selo img {
+  width: 100%;
+  height: auto;
+}
+
+/* LOGO */
 .logo {
   text-align: center;
   margin-bottom: 40px;
@@ -52,17 +68,19 @@ body {
   max-height: 120px;
 }
 
+/* TEXTO SUPERIOR */
 .texto-topo {
   text-align: center;
   font-size: 28px;
-  font-weight: 600;
-  margin-bottom: 30px;
+  font-weight: 700;
+  margin-bottom: 80px;
   color: #2b4474;
 }
 
+/* VALOR */
 .valor-container {
   width: 100%;
-  height: 350px;
+  height: 420px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -71,26 +89,28 @@ body {
 
 .valor-texto {
   font-weight: 900;
-  font-size: 220px;
+  font-size: 320px; /* 🔥 começa bem maior */
   line-height: 1;
   text-align: center;
   white-space: nowrap;
   color: #2b4474;
 }
 
+/* LEGAL */
 .legal {
   text-align: center;
-  font-size: 22px;
-  margin-top: 40px;
+  font-size: 26px;
+  margin-top: 60px;
   color: #2b4474;
 }
 
+/* RODAPÉ */
 .rodape {
   position: absolute;
-  bottom: 40px;
+  bottom: 50px;
   width: calc(100% - 80px);
   text-align: center;
-  font-size: 18px;
+  font-size: 20px;
   color: #2b4474;
 }
 
@@ -101,24 +121,34 @@ body {
 
 <div class="card">
 
-  <div class="logo">
-    <img src="{{LOGO}}" alt="Logo" />
+  <!-- SELO -->
+  <div class="selo">
+    <img src="{{SELO}}" />
   </div>
 
+  <!-- LOGO -->
+  <div class="logo">
+    <img src="{{LOGO}}" />
+  </div>
+
+  <!-- TEXTO -->
   <div class="texto-topo">
     {{TEXTO}}
   </div>
 
+  <!-- VALOR -->
   <div class="valor-container" id="valor-container">
     <div class="valor-texto" id="valor-texto">
       {{VALOR}}
     </div>
   </div>
 
+  <!-- LEGAL -->
   <div class="legal">
     {{LEGAL}}
   </div>
 
+  <!-- RODAPÉ -->
   <div class="rodape">
     {{UF}} <br/>
     {{URN}} <br/>
@@ -129,18 +159,21 @@ body {
 
 <script>
 window.addEventListener("load", function () {
+
   const container = document.getElementById("valor-container");
   const texto = document.getElementById("valor-texto");
 
   if (!container || !texto) return;
 
-  let fontSize = 220;
+  let fontSize = 320; // 🔥 começa grande
   texto.style.fontSize = fontSize + "px";
 
-  while (texto.scrollWidth > container.clientWidth && fontSize > 40) {
-    fontSize -= 2;
+  // diminui até caber
+  while (texto.scrollWidth > container.clientWidth && fontSize > 60) {
+    fontSize -= 4;
     texto.style.fontSize = fontSize + "px";
   }
+
 });
 </script>
 
