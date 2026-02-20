@@ -5,27 +5,26 @@
 <title>Promoção</title>
 
 <style>
-/* Fontes importadas do Google Fonts para garantir a visualização */
 @font-face {
   font-family: 'Inter';
-  src: url('https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKOBc.woff2' ) format('woff2');
+  src: url('https://fonts.gstatic.com/s/inter/v12/UcCO3FwrK3iLTeHuS_fvQtMwCp50KnMw2boKOBc.woff2') format('woff2');
   font-weight: 400;
 }
 @font-face {
   font-family: 'Inter';
-  src: url('https://fonts.gstatic.com/s/inter/v12/UcC73FwrK3iLTeHuS_fvQtMwCp50KnMa1ZL7W0Q5nw.woff2' ) format('woff2');
+  src: url('https://fonts.gstatic.com/s/inter/v12/UcC73FwrK3iLTeHuS_fvQtMwCp50KnMa1ZL7W0Q5nw.woff2') format('woff2');
   font-weight: 700;
 }
 @font-face {
   font-family: 'Inter';
-  src: url('https://fonts.gstatic.com/s/inter/v12/UcC73FwrK3iLTeHuS_fvQtMwCp50KnMa1ZL7W0Q5nw.woff2' ) format('woff2');
+  src: url('https://fonts.gstatic.com/s/inter/v12/UcC73FwrK3iLTeHuS_fvQtMwCp50KnMa1ZL7W0Q5nw.woff2') format('woff2');
   font-weight: 900;
 }
 
 * { 
   box-sizing: border-box;
   font-family: Inter, sans-serif;
-  text-transform: uppercase; /* Força caixa alta em tudo */
+  text-transform: uppercase;
 }
 
 body {
@@ -65,7 +64,7 @@ body {
   object-fit: contain;
 }
 
-/* LOGO - Reduzido para 70% (154px) */
+/* LOGO */
 .logo {
   margin-top: 60px;
   height: 154px;
@@ -73,7 +72,6 @@ body {
   align-items: center;
   justify-content: center;
 }
-
 .logo img {
   max-height: 154px;
   max-width: 520px;
@@ -93,6 +91,17 @@ body {
   white-space: nowrap;
 }
 
+/* TEXTO */
+.texto {
+  margin-top: 30px;
+  text-align: center;
+  font-weight: 400;
+  font-size: 28px;
+  max-width: 550px;
+  line-height: 1.15;
+  word-break: break-word;
+}
+
 /* BENEFÍCIO */
 .beneficio {
   margin-top: 50px;
@@ -106,12 +115,16 @@ body {
   width: 100%;
   padding: 0 30px;
   margin-bottom: 20px;
+  overflow: hidden; /* impede extrapolação */
 }
 
+/* AJUSTE RESPONSIVO DO VALOR */
 .numero {
   font-weight: 900;
-  font-size: clamp(120px, 25vw, 240px);
+  font-size: clamp(80px, 18vw, 240px);
   line-height: 0.8;
+  max-width: 100%;
+  text-align: center;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -119,30 +132,18 @@ body {
 
 .percent {
   font-weight: 900;
-  font-size: clamp(120px, 25vw, 240px);
+  font-size: clamp(80px, 18vw, 240px);
   margin-left: 6px;
   line-height: 0.8;
 }
 
-/* No promocao.html, o termo fixo foi substituído pelo elemento dinâmico {{COMPLEMENTO}} */
 .complemento-destaque {
   margin-top: 0px;
   font-weight: 700;
   font-size: 46px;
 }
 
-/* TEXTO */
-.texto {
-  margin-top: 30px;
-  text-align: center;
-  font-weight: 400;
-  font-size: 28px;
-  max-width: 550px;
-  line-height: 1.15;
-  word-break: break-word;
-}
-
-/* AREA DE ESPAÇAMENTO DINÂMICO */
+/* AREA FLEXÍVEL */
 .espaco-flexivel {
   flex: 1;
   display: flex;
