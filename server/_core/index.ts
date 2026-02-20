@@ -2,7 +2,7 @@ import express from "express";
 import path from "path";
 import fs from "fs";
 import multer from "multer";
-import { CardGenerator } from "./generatecard";
+import { CardGenerator } from "../cardGenerator";
 
 const app = express();
 app.use(express.json());
