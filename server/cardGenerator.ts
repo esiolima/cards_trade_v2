@@ -5,11 +5,12 @@ import archiver from "archiver";
 import xlsx from "xlsx";
 import { EventEmitter } from "events";
 
-const OUTPUT_DIR = path.join(process.cwd(), "output");
-const TMP_DIR = path.join(process.cwd(), "tmp");
-const TEMPLATES_DIR = path.join(process.cwd(), "templates");
-const LOGOS_DIR = path.join(process.cwd(), "logos");
-const SELOS_DIR = path.join(process.cwd(), "selos");
+const BASE_DIR = path.resolve();
+const OUTPUT_DIR = path.join(BASE_DIR, "output");
+const TMP_DIR = path.join(BASE_DIR, "tmp");
+const TEMPLATES_DIR = path.join(BASE_DIR, "templates");
+const LOGOS_DIR = path.join(BASE_DIR, "logos");
+const SELOS_DIR = path.join(BASE_DIR, "selos");
 
 interface CardData {
   ordem?: string;
