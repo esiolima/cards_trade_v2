@@ -1,6 +1,6 @@
 import path from "path";
 import fs from "fs";
-import puppeteer, { Browser } from "puppeteer";
+import puppeteer, { Browser } from "puppeteer-core";
 import archiver from "archiver";
 import xlsx from "xlsx";
 import { EventEmitter } from "events";
@@ -80,8 +80,10 @@ export class CardGenerator extends EventEmitter {
       fs.mkdirSync(TMP_DIR, { recursive: true });
 
     this.browser = await puppeteer.launch({
+      executablePath:
+        process.env.PUPPETEER_EXECUTABLE_PATH || "/usr/bin/chromium",
       args: ["--no-sandbox", "--disable-setuid-sandbox"],
-      headless: true,
+      headless: "new",
     });
   }
 
@@ -91,7 +93,7 @@ export class CardGenerator extends EventEmitter {
   ): Promise<string> {
     if (!this.browser) throw new Error("Generator not initialized");
 
-    // Limpa output
+    // limpa output
     const oldFiles = fs.readdirSync(OUTPUT_DIR);
     for (const file of oldFiles) {
       fs.unlinkSync(path.join(OUTPUT_DIR, file));
@@ -118,14 +120,12 @@ export class CardGenerator extends EventEmitter {
       let valorFinal: string;
 
       if (tipo === "promocao") {
-        // mantém exatamente como veio
         valorFinal = String(row.valor ?? "");
       } else {
-        // remove apenas o caractere %
         valorFinal = String(row.valor ?? "").replace(/%/g, "");
       }
 
-      // ✅ LÓGICA CORRIGIDA DO SELO
+      // 🔥 LÓGICA CORRIGIDA DO SELO
       let seloBase64 = "";
 
       if (row.selo) {
@@ -183,7 +183,7 @@ export class CardGenerator extends EventEmitter {
         waitUntil: "networkidle0",
       });
 
-      // 🔥 AUTO-FIT (só executa se existir no template)
+      // 🔥 AUTO-FIT EXECUTADO DIRETAMENTE
       await page.evaluate(() => {
         const container = document.getElementById("percentual");
         const numero = document.getElementById("numero");
