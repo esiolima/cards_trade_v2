@@ -36,67 +36,68 @@ export default function LogoManager() {
   };
 
   return (
-    <div style={{ padding: 40 }}>
+    <div className="logo-manager-container">
       <h2>Gerenciamento de Logos</h2>
 
-      <div className="grid">
+      <div className="logo-grid">
         {logos.map((logo) => (
-          <div key={logo} className="logo-card">
+          <div key={logo} className="logo-item">
             <img src={`/logos/${logo}`} alt={logo} />
 
-            {/* Não mostrar lixeira para blank.png */}
             {logo.toLowerCase() !== "blank.png" && (
-              <div
-                className="delete-overlay"
+              <button
+                className="delete-button"
                 onClick={() => handleDelete(logo)}
               >
                 🗑
-              </div>
+              </button>
             )}
           </div>
         ))}
       </div>
 
       <style>{`
-        .grid {
+        .logo-manager-container {
+          padding: 40px;
+        }
+
+        .logo-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, 180px);
+          grid-template-columns: repeat(auto-fill, 160px);
           gap: 20px;
-          margin-top: 30px;
+          margin-top: 20px;
         }
 
-        .logo-card {
+        .logo-item {
           position: relative;
-          width: 180px;
-          height: 180px;
-          border-radius: 12px;
-          overflow: hidden;
-          border: 1px solid #ddd;
-          background: #fff;
-          cursor: pointer;
-        }
-
-        .logo-card img {
-          width: 100%;
-          height: 100%;
-          object-fit: contain;
+          border-radius: 10px;
+          background: white;
+          border: 1px solid #e5e5e5;
           padding: 15px;
         }
 
-        .delete-overlay {
+        .logo-item img {
+          width: 100%;
+          height: 120px;
+          object-fit: contain;
+        }
+
+        .delete-button {
           position: absolute;
-          inset: 0;
-          background: rgba(0, 0, 0, 0.65);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 42px;
+          top: 8px;
+          right: 8px;
+          background: rgba(0,0,0,0.7);
+          border: none;
           color: white;
+          border-radius: 50%;
+          width: 30px;
+          height: 30px;
+          cursor: pointer;
           opacity: 0;
           transition: 0.2s ease;
         }
 
-        .logo-card:hover .delete-overlay {
+        .logo-item:hover .delete-button {
           opacity: 1;
         }
       `}</style>
