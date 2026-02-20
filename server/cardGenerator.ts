@@ -62,10 +62,6 @@ function normalizeType(tipo: string): string {
   return "";
 }
 
-function sanitizePercentage(valor: any): string {
-  return String(valor ?? "").replace(/\D/g, "");
-}
-
 function imageToBase64(imagePath: string): string {
   if (!fs.existsSync(imagePath)) return "";
   const ext = path.extname(imagePath).replace(".", "");
@@ -95,7 +91,7 @@ export class CardGenerator extends EventEmitter {
   ): Promise<string> {
     if (!this.browser) throw new Error("Generator not initialized");
 
-    // limpa output
+    // Limpa output
     const oldFiles = fs.readdirSync(OUTPUT_DIR);
     for (const file of oldFiles) {
       fs.unlinkSync(path.join(OUTPUT_DIR, file));
@@ -118,12 +114,18 @@ export class CardGenerator extends EventEmitter {
       const templatePath = path.join(TEMPLATES_DIR, `${tipo}.html`);
       let html = fs.readFileSync(templatePath, "utf8");
 
-      let valorFinal =
-        tipo === "promocao"
-          ? String(row.valor ?? "")
-          : sanitizePercentage(row.valor);
+      // 🔥 REGRA DEFINITIVA DO VALOR
+      let valorFinal: string;
 
-      // SEL0 CORRIGIDO
+      if (tipo === "promocao") {
+        // mantém exatamente como veio
+        valorFinal = String(row.valor ?? "");
+      } else {
+        // remove apenas o caractere %
+        valorFinal = String(row.valor ?? "").replace(/%/g, "");
+      }
+
+      // ✅ LÓGICA CORRIGIDA DO SELO
       let seloBase64 = "";
 
       if (row.selo) {
@@ -181,7 +183,7 @@ export class CardGenerator extends EventEmitter {
         waitUntil: "networkidle0",
       });
 
-      // AUTO-FIT EXECUTADO DIRETAMENTE VIA PUPPETEER
+      // 🔥 AUTO-FIT (só executa se existir no template)
       await page.evaluate(() => {
         const container = document.getElementById("percentual");
         const numero = document.getElementById("numero");
