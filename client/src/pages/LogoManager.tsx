@@ -28,9 +28,9 @@ export default function LogoManager() {
     }
   }, [logosData]);
 
-  // ================================
-  // DELETE LOGO
-  // ================================
+  // ===============================
+  // DELETE LOGO (mantendo tRPC)
+  // ===============================
   const handleDelete = async (logoName: string) => {
     const confirmDelete = window.confirm(
       `Deseja realmente excluir ${logoName}?`
@@ -56,9 +56,6 @@ export default function LogoManager() {
     }
   };
 
-  // ================================
-  // UPLOAD
-  // ================================
   const handleFileSelect = async (file: File | null | undefined) => {
     if (!file) return;
 
@@ -124,9 +121,6 @@ export default function LogoManager() {
     handleFileSelect(droppedFile);
   };
 
-  // ================================
-  // ESTILOS
-  // ================================
   const bgColor = isDark 
     ? "bg-gradient-to-br from-gray-900 via-blue-950 to-purple-950" 
     : "bg-gradient-to-br from-slate-100 via-blue-100 to-purple-100";
@@ -170,7 +164,6 @@ export default function LogoManager() {
           </button>
         </div>
 
-        {/* Upload Section */}
         <div className={`p-8 rounded-2xl shadow-2xl ${cardBg}`}>
           <h2 className={`text-2xl font-bold ${textPrimary} mb-4`}>
             Gerenciador de Logos
@@ -221,7 +214,6 @@ export default function LogoManager() {
           )}
         </div>
 
-        {/* Logos */}
         <div className={`p-8 rounded-2xl shadow-2xl ${cardBg}`}>
           <h3 className={`text-xl font-bold ${textPrimary} mb-4`}>
             Logos Disponíveis
@@ -236,12 +228,11 @@ export default function LogoManager() {
                 .map((logo) => (
                   <div
                     key={logo.name}
-                    className={`relative rounded-lg p-4 transition-all duration-300 border ${isDark ? 'bg-black/20 border-white/10 hover:bg-black/30' : 'bg-black/5 border-slate-400/20 hover:bg-black/10'}`}
+                    className={`relative rounded-lg p-4 transition-all duration-300 border group ${isDark ? 'bg-black/20 border-white/10 hover:bg-black/30' : 'bg-black/5 border-slate-400/20 hover:bg-black/10'}`}
                   >
-                    {/* BOTÃO DELETE */}
                     <button
                       onClick={() => handleDelete(logo.name)}
-                      className="absolute top-2 right-2 opacity-0 hover:scale-110 transition-all duration-200"
+                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-all duration-200"
                     >
                       <Trash2 className={`w-4 h-4 ${isDark ? "text-red-400" : "text-red-600"}`} />
                     </button>
@@ -255,12 +246,6 @@ export default function LogoManager() {
                     <p className={`text-sm truncate ${textSecondary}`}>
                       {logo.name}
                     </p>
-
-                    <style jsx>{`
-                      div:hover > button {
-                        opacity: 1;
-                      }
-                    `}</style>
                   </div>
                 ))}
             </div>
