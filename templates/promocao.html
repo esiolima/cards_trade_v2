@@ -113,30 +113,19 @@ body {
   justify-content: center;
   align-items: flex-end;
   width: 100%;
-  padding: 0 30px;
+  padding: 0 40px; /* margem lateral segura */
   margin-bottom: 20px;
-  overflow: hidden; /* impede extrapolação */
 }
 
-/* AJUSTE RESPONSIVO DO VALOR */
-.numero {
+.numero,
+.percent {
   font-weight: 900;
-  font-size: clamp(80px, 18vw, 240px);
+  font-size: 240px; /* tamanho máximo inicial */
   line-height: 0.8;
-  max-width: 100%;
-  text-align: center;
-  overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.percent {
-  font-weight: 900;
-  font-size: clamp(80px, 18vw, 240px);
-  margin-left: 6px;
-  line-height: 0.8;
-}
-
+/* COMPLEMENTO */
 .complemento-destaque {
   margin-top: 0px;
   font-weight: 700;
@@ -169,17 +158,17 @@ body {
 }
 
 .uf {
-  font-size: clamp(16px, 2vw, 24px);
+  font-size: 18px;
   font-weight: 700;
 }
 
 .segmento-label {
   margin-top: 12px;
-  font-size: clamp(12px, 1.5vw, 18px);
+  font-size: 14px;
 }
 
 .segmento-valor {
-  font-size: clamp(16px, 2vw, 25px);
+  font-size: 18px;
   font-weight: 700;
 }
 </style>
@@ -201,9 +190,9 @@ body {
     <div class="texto">{{TEXTO}}</div>
 
     <div class="beneficio">
-      <div class="percentual">
-        <div class="numero">{{VALOR}}</div>
-        <div class="percent">%</div>
+      <div class="percentual" id="percentual">
+        <div class="numero" id="numero">{{VALOR}}</div>
+        <div class="percent" id="percent">%</div>
       </div>
       <div class="complemento-destaque">{{COMPLEMENTO}}</div>
     </div>
@@ -223,5 +212,28 @@ body {
     </div>
 
   </div>
+
+<script>
+function autoFitPercentual() {
+  const container = document.getElementById("percentual");
+  const numero = document.getElementById("numero");
+  const percent = document.getElementById("percent");
+
+  if (!container || !numero) return;
+
+  let fontSize = 240;
+  numero.style.fontSize = fontSize + "px";
+  percent.style.fontSize = fontSize + "px";
+
+  while (container.scrollWidth > container.clientWidth && fontSize > 60) {
+    fontSize -= 2;
+    numero.style.fontSize = fontSize + "px";
+    percent.style.fontSize = fontSize + "px";
+  }
+}
+
+window.onload = autoFitPercentual;
+</script>
+
 </body>
 </html>
