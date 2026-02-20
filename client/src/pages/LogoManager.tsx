@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-export default function Logos() {
+export default function LogoManager() {
   const [logos, setLogos] = useState<string[]>([]);
 
   useEffect(() => {
@@ -22,13 +22,15 @@ export default function Logos() {
       });
 
       if (!response.ok) {
-        throw new Error("Erro ao excluir");
+        const error = await response.json();
+        alert(error.error || "Erro ao excluir logo.");
+        return;
       }
 
       setLogos((prev) =>
         prev.filter((item) => item !== logoName)
       );
-    } catch (error) {
+    } catch {
       alert("Erro ao excluir logo.");
     }
   };
@@ -42,12 +44,15 @@ export default function Logos() {
           <div key={logo} className="logo-card">
             <img src={`/logos/${logo}`} alt={logo} />
 
-            <div
-              className="delete-overlay"
-              onClick={() => handleDelete(logo)}
-            >
-              🗑
-            </div>
+            {/* Não mostrar lixeira para blank.png */}
+            {logo.toLowerCase() !== "blank.png" && (
+              <div
+                className="delete-overlay"
+                onClick={() => handleDelete(logo)}
+              >
+                🗑
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -85,7 +90,7 @@ export default function Logos() {
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 40px;
+          font-size: 42px;
           color: white;
           opacity: 0;
           transition: 0.2s ease;
