@@ -57,7 +57,7 @@ export class CardGenerator extends EventEmitter {
   async generateCards(excelFilePath: string): Promise<string> {
     if (!this.browser) throw new Error("Browser not initialized");
 
-    // limpa output antigo
+    // limpa arquivos antigos
     fs.readdirSync(OUTPUT_DIR).forEach((file) => {
       if (file.endsWith(".pdf") || file.endsWith(".zip")) {
         fs.unlinkSync(path.join(OUTPUT_DIR, file));
@@ -86,10 +86,17 @@ export class CardGenerator extends EventEmitter {
           ? String(row.valor ?? "")
           : String(row.valor ?? "").replace(/%/g, "");
 
-      const logoBase64 = row.logo
-        ? this.imageToBase64(path.join(LOGOS_DIR, row.logo))
-        : "";
+      // 🔥 LOGO COM FALLBACK PARA blank.png
+      const logoFile =
+        row.logo && String(row.logo).trim() !== ""
+          ? String(row.logo).trim()
+          : "blank.png";
 
+      const logoBase64 = this.imageToBase64(
+        path.join(LOGOS_DIR, logoFile)
+      );
+
+      // SELO
       const seloBase64 = row.selo
         ? this.imageToBase64(
             path.join(
@@ -115,7 +122,6 @@ export class CardGenerator extends EventEmitter {
         .replaceAll("{{LOGO}}", logoBase64)
         .replaceAll("{{SELO}}", seloBase64);
 
-      // 🔥 VOLTAMOS PARA page.goto (resolve fonte e layout)
       const tmpHtmlPath = path.join(TMP_DIR, `card_${processed + 1}.html`);
       fs.writeFileSync(tmpHtmlPath, html);
 
@@ -126,10 +132,14 @@ export class CardGenerator extends EventEmitter {
         waitUntil: "networkidle0",
       });
 
-      const pdfPath = path.join(
-        OUTPUT_DIR,
-        `card_${processed + 1}.pdf`
-      );
+      // 🔥 NOME FINAL DO PDF: ordem_tipo.pdf
+      const ordemFinal =
+        row.ordem && String(row.ordem).trim() !== ""
+          ? String(row.ordem).trim()
+          : String(processed + 1);
+
+      const pdfName = `${ordemFinal}_${tipo}.pdf`;
+      const pdfPath = path.join(OUTPUT_DIR, pdfName);
 
       await page.pdf({
         path: pdfPath,
@@ -142,7 +152,6 @@ export class CardGenerator extends EventEmitter {
 
       processed++;
 
-      // 🔥 PROGRESSO CORRETO (resolve NaN)
       this.emit("progress", {
         processed,
         total,
