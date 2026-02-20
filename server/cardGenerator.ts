@@ -87,13 +87,9 @@ export class CardGenerator extends EventEmitter {
     });
   }
 
-  async generateCards(
-    excelFilePath: string,
-    onProgress?: (progress: GenerationProgress) => void
-  ): Promise<string> {
+  async generateCards(excelFilePath: string): Promise<string> {
     if (!this.browser) throw new Error("Generator not initialized");
 
-    // limpa output
     const oldFiles = fs.readdirSync(OUTPUT_DIR);
     for (const file of oldFiles) {
       fs.unlinkSync(path.join(OUTPUT_DIR, file));
@@ -108,7 +104,6 @@ export class CardGenerator extends EventEmitter {
       return tipo && fs.existsSync(path.join(TEMPLATES_DIR, `${tipo}.html`));
     });
 
-    const total = validRows.length;
     let processed = 0;
 
     for (const row of validRows) {
@@ -116,32 +111,21 @@ export class CardGenerator extends EventEmitter {
       const templatePath = path.join(TEMPLATES_DIR, `${tipo}.html`);
       let html = fs.readFileSync(templatePath, "utf8");
 
-      // 🔥 REGRA DEFINITIVA DO VALOR
-      let valorFinal: string;
+      let valorFinal =
+        tipo === "promocao"
+          ? String(row.valor ?? "")
+          : String(row.valor ?? "").replace(/%/g, "");
 
-      if (tipo === "promocao") {
-        valorFinal = String(row.valor ?? "");
-      } else {
-        valorFinal = String(row.valor ?? "").replace(/%/g, "");
-      }
-
-      // 🔥 LÓGICA CORRIGIDA DO SELO
       let seloBase64 = "";
 
       if (row.selo) {
-        const seloNormalized = String(row.selo)
-          .toLowerCase()
-          .trim()
-          .normalize("NFD")
-          .replace(/[\u0300-\u036f]/g, "");
-
-        let seloFile = "";
-
-        if (seloNormalized === "nova") {
-          seloFile = "acaonova.png";
-        } else if (seloNormalized === "renovada") {
-          seloFile = "acaorenovada.png";
-        }
+        const selo = String(row.selo).toLowerCase().trim();
+        const seloFile =
+          selo === "nova"
+            ? "acaonova.png"
+            : selo === "renovada"
+            ? "acaorenovada.png"
+            : "";
 
         if (seloFile) {
           seloBase64 = imageToBase64(path.join(SELOS_DIR, seloFile));
@@ -172,46 +156,14 @@ export class CardGenerator extends EventEmitter {
       fs.writeFileSync(tmpHtmlPath, html);
 
       const page = await this.browser.newPage();
-
-      await page.setViewport({
-        width: 700,
-        height: 1058,
-        deviceScaleFactor: 1,
-      });
+      await page.setViewport({ width: 700, height: 1058 });
 
       await page.goto(`file://${tmpHtmlPath}`, {
         waitUntil: "networkidle0",
       });
 
-      // 🔥 AUTO-FIT EXECUTADO DIRETAMENTE
-      await page.evaluate(() => {
-        const container = document.getElementById("percentual");
-        const numero = document.getElementById("numero");
-        const percent = document.getElementById("percent");
-
-        if (!container || !numero || !percent) return;
-
-        let fontSize = 240;
-        numero.style.fontSize = fontSize + "px";
-        percent.style.fontSize = fontSize + "px";
-
-        while (container.scrollWidth > container.clientWidth && fontSize > 60) {
-          fontSize -= 2;
-          numero.style.fontSize = fontSize + "px";
-          percent.style.fontSize = fontSize + "px";
-        }
-      });
-
-      const ordem = String(row.ordem || processed + 1).trim();
-      const categoria = String(row.categoria || "SEM_CATEGORIA")
-        .toUpperCase()
-        .replace(/\s+/g, "_");
-
-      const pdfName = `${ordem}_${tipo.toUpperCase()}_${categoria}.pdf`;
-      const pdfPath = path.join(OUTPUT_DIR, pdfName);
-
       await page.pdf({
-        path: pdfPath,
+        path: path.join(OUTPUT_DIR, `card_${processed + 1}.pdf`),
         width: "700px",
         height: "1058px",
         printBackground: true,
@@ -219,56 +171,10 @@ export class CardGenerator extends EventEmitter {
       });
 
       await page.close();
-
       processed++;
-
-      const percentage = Math.round((processed / total) * 100);
-
-      if (onProgress) {
-        onProgress({
-          total,
-          processed,
-          percentage,
-          currentCard: `${processed}/${total}`,
-        });
-      }
-
-      this.emit("progress", {
-        total,
-        processed,
-        percentage,
-        currentCard: `${processed}/${total}`,
-      });
     }
 
-    const zipName = getTimestampFileName();
-    const zipPath = path.join(OUTPUT_DIR, zipName);
-
-    await this.createZip(zipPath);
-
-    return zipPath;
-  }
-
-  private async createZip(zipPath: string): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const output = fs.createWriteStream(zipPath);
-      const archive = archiver("zip", { zlib: { level: 9 } });
-
-      output.on("close", () => resolve());
-      archive.on("error", reject);
-
-      archive.pipe(output);
-
-      const files = fs.readdirSync(OUTPUT_DIR);
-
-      for (const file of files) {
-        if (file.endsWith(".pdf")) {
-          archive.file(path.join(OUTPUT_DIR, file), { name: file });
-        }
-      }
-
-      archive.finalize();
-    });
+    return "OK";
   }
 
   async close() {
