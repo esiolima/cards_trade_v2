@@ -80,13 +80,11 @@ export class CardGenerator extends EventEmitter {
 
       let html = fs.readFileSync(templatePath, "utf8");
 
-      // REGRA DO VALOR
       const valorFinal =
         tipo === "promocao"
           ? String(row.valor ?? "")
           : String(row.valor ?? "").replace(/%/g, "");
 
-      // 🔥 LOGO COM FALLBACK PARA blank.png
       const logoFile =
         row.logo && String(row.logo).trim() !== ""
           ? String(row.logo).trim()
@@ -96,7 +94,6 @@ export class CardGenerator extends EventEmitter {
         path.join(LOGOS_DIR, logoFile)
       );
 
-      // SELO
       const seloBase64 = row.selo
         ? this.imageToBase64(
             path.join(
@@ -132,13 +129,29 @@ export class CardGenerator extends EventEmitter {
         waitUntil: "networkidle0",
       });
 
-      // 🔥 NOME FINAL DO PDF: ordem_tipo.pdf
+      // 🔥 ORDEM
       const ordemFinal =
         row.ordem && String(row.ordem).trim() !== ""
           ? String(row.ordem).trim()
           : String(processed + 1);
 
-      const pdfName = `${ordemFinal}_${tipo}.pdf`;
+      // 🔥 CATEGORIA (opcional)
+      let categoriaFinal = "";
+
+      if (row.categoria && String(row.categoria).trim() !== "") {
+        categoriaFinal = String(row.categoria)
+          .trim()
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/\s+/g, "_")
+          .replace(/[^a-z0-9_]/g, "");
+      }
+
+      const pdfName = categoriaFinal
+        ? `${ordemFinal}_${tipo}_${categoriaFinal}.pdf`
+        : `${ordemFinal}_${tipo}.pdf`;
+
       const pdfPath = path.join(OUTPUT_DIR, pdfName);
 
       await page.pdf({
@@ -159,7 +172,6 @@ export class CardGenerator extends EventEmitter {
       });
     }
 
-    // GERA ZIP
     const zipPath = path.join(OUTPUT_DIR, "cards.zip");
     const output = fs.createWriteStream(zipPath);
     const archive = archiver("zip", { zlib: { level: 9 } });
