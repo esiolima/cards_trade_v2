@@ -1,6 +1,7 @@
 import path from "path";
 import fs from "fs";
 import puppeteer, { Browser } from "puppeteer-core";
+import archiver from "archiver";
 import xlsx from "xlsx";
 import { EventEmitter } from "events";
 
@@ -50,8 +51,17 @@ export class CardGenerator extends EventEmitter {
     return `data:image/${ext};base64,${buffer.toString("base64")}`;
   }
 
-  async generateCards(excelFilePath: string) {
+  async generateCards(excelFilePath: string): Promise<string> {
     if (!this.browser) throw new Error("Browser not initialized");
+
+    // limpa PDFs antigos
+    if (fs.existsSync(OUTPUT_DIR)) {
+      fs.readdirSync(OUTPUT_DIR).forEach((file) => {
+        if (file.endsWith(".pdf") || file.endsWith(".zip")) {
+          fs.unlinkSync(path.join(OUTPUT_DIR, file));
+        }
+      });
+    }
 
     const workbook = xlsx.readFile(excelFilePath);
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
@@ -106,8 +116,10 @@ export class CardGenerator extends EventEmitter {
       await page.setViewport({ width: 700, height: 1058 });
       await page.setContent(html, { waitUntil: "networkidle0" });
 
+      const pdfPath = path.join(OUTPUT_DIR, `card_${index}.pdf`);
+
       await page.pdf({
-        path: path.join(OUTPUT_DIR, `card_${index}.pdf`),
+        path: pdfPath,
         width: "700px",
         height: "1058px",
         printBackground: true,
@@ -118,12 +130,28 @@ export class CardGenerator extends EventEmitter {
       this.emit("progress", {
         current: index,
         total: rows.length,
+        percentage: Math.round((index / rows.length) * 100),
       });
 
       index++;
     }
 
-    return "OK";
+    // gera ZIP
+    const zipPath = path.join(OUTPUT_DIR, "cards.zip");
+    const output = fs.createWriteStream(zipPath);
+    const archive = archiver("zip", { zlib: { level: 9 } });
+
+    archive.pipe(output);
+
+    fs.readdirSync(OUTPUT_DIR).forEach((file) => {
+      if (file.endsWith(".pdf")) {
+        archive.file(path.join(OUTPUT_DIR, file), { name: file });
+      }
+    });
+
+    await archive.finalize();
+
+    return zipPath;
   }
 
   async close() {
