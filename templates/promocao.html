@@ -38,7 +38,7 @@ body {
   border: 8px solid #e0b84b;
   border-radius: 40px;
   box-sizing: border-box;
-  padding: 60px 40px;
+  padding: 80px 40px 60px 40px;
   position: relative;
   overflow: hidden;
 }
@@ -46,10 +46,9 @@ body {
 /* SELO */
 .selo {
   position: absolute;
-  top: 20px;
-  left: 20px;
-  width: 120px;
-  height: 120px;
+  top: 25px;
+  left: 25px;
+  width: 130px;
 }
 
 .selo img {
@@ -68,12 +67,31 @@ body {
   max-height: 120px;
 }
 
+/* TARJA PROMOÇÃO */
+.tarja {
+  margin: 30px auto 40px auto;
+  width: 420px;
+  height: 90px;
+  background: #ff7a00;
+  border-radius: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tarja span {
+  color: #ffffff;
+  font-weight: 900;
+  font-size: 42px;
+  letter-spacing: 2px;
+}
+
 /* TEXTO SUPERIOR */
 .texto-topo {
   text-align: center;
   font-size: 28px;
   font-weight: 700;
-  margin-bottom: 80px;
+  margin-bottom: 70px;
   color: #2b4474;
 }
 
@@ -89,7 +107,7 @@ body {
 
 .valor-texto {
   font-weight: 900;
-  font-size: 320px; /* 🔥 começa bem maior */
+  font-size: 320px;
   line-height: 1;
   text-align: center;
   white-space: nowrap;
@@ -131,6 +149,11 @@ body {
     <img src="{{LOGO}}" />
   </div>
 
+  <!-- TARJA PROMOÇÃO -->
+  <div class="tarja">
+    <span>PROMOÇÃO</span>
+  </div>
+
   <!-- TEXTO -->
   <div class="texto-topo">
     {{TEXTO}}
@@ -152,6 +175,7 @@ body {
   <div class="rodape">
     {{UF}} <br/>
     {{URN}} <br/>
+    SEGMENTO DE CLIENTES: <br/>
     {{SEGMENTO}}
   </div>
 
@@ -165,10 +189,9 @@ window.addEventListener("load", function () {
 
   if (!container || !texto) return;
 
-  let fontSize = 320; // 🔥 começa grande
+  let fontSize = 320;
   texto.style.fontSize = fontSize + "px";
 
-  // diminui até caber
   while (texto.scrollWidth > container.clientWidth && fontSize > 60) {
     fontSize -= 4;
     texto.style.fontSize = fontSize + "px";
