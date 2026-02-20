@@ -42,19 +42,24 @@ body {
   padding: 80px 40px 60px 40px;
   position: relative;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 /* SELO */
 .selo {
   position: absolute;
-  top: 25px;
-  left: 25px;
-  width: 130px;
+  top: 0;
+  left: 0;
+  width: 100px;
+  height: 100px;
 }
 
 .selo img {
   width: 100%;
-  height: auto;
+  height: 100%;
+  object-fit: contain;
 }
 
 /* LOGO */
@@ -91,9 +96,12 @@ body {
 .texto-topo {
   text-align: center;
   font-size: 28px;
-  font-weight: 700;
+  font-weight: 400;
   margin-bottom: 70px;
   color: #2b4474;
+  max-width: 550px;
+  line-height: 1.15;
+  word-break: break-word;
 }
 
 /* VALOR */
@@ -115,6 +123,26 @@ body {
   color: #2b4474;
 }
 
+/* AREA DE CONTEÚDO INFERIOR - Agrupada conforme a imagem */
+.conteudo-inferior {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 40px; /* Espaço após o VALOR */
+}
+
+/* COMPLEMENTO */
+.complemento {
+  text-align: center;
+  font-weight: 400;
+  font-size: 28px;
+  max-width: 550px;
+  line-height: 1.15;
+  word-break: break-word;
+  margin-bottom: 25px; /* Espaço entre complemento e legal */
+}
+
 /* LEGAL */
 .legal {
   text-align: center;
@@ -122,27 +150,35 @@ body {
   max-width: 550px;
   line-height: 1.15;
   word-break: break-word;
+  margin-bottom: 30px; /* Espaço entre legal e UF */
 }
 
 /* RODAPÉ */
 .rodape {
-  margin-bottom: 30px;
   text-align: center;
+  color: #000;
 }
 
-.uf {
-  font-size: clamp(16px, 2vw, 24px);
+.uf, .urn {
+  font-size: 24px;
   font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.segmento-container {
+  margin-top: 15px;
 }
 
 .segmento-label {
-  margin-top: 12px;
-  font-size: clamp(12px, 1.5vw, 18px);
+  font-size: 18px;
+  font-weight: 400;
+  display: block;
 }
 
 .segmento-valor {
-  font-size: clamp(16px, 2vw, 25px);
+  font-size: 25px;
   font-weight: 700;
+  display: block;
 }
 
 </style>
@@ -179,17 +215,24 @@ body {
     </div>
   </div>
 
-  <!-- LEGAL -->
-  <div class="legal">
-    {{LEGAL}}
-  </div>
+  <!-- CONTAINER PARA ELEMENTOS INFERIORES -->
+  <div class="conteudo-inferior">
+    <div class="complemento">
+      {{COMPLEMENTO}}
+    </div>
 
-  <!-- RODAPÉ -->
-  <div class="rodape">
-    {{UF}} <br/>
-    {{URN}} <br/>
-    SEGMENTO DE CLIENTES: <br/>
-    {{SEGMENTO}}
+    <div class="legal">
+      {{LEGAL}}
+    </div>
+
+    <div class="rodape">
+      <div class="uf">{{UF}}</div>
+      <div class="urn">{{URN}}</div>
+      <div class="segmento-container">
+        <span class="segmento-label">SEGMENTO DE CLIENTES:</span>
+        <span class="segmento-valor">{{SEGMENTO}}</span>
+      </div>
+    </div>
   </div>
 
 </div>
