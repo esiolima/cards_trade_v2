@@ -67,7 +67,16 @@ app.post("/api/logos", upload.single("logo"), (req, res) => {
 // DELETAR LOGO
 // =============================
 app.delete("/api/logos/:name", (req, res) => {
-  const filePath = path.join(LOGOS_DIR, req.params.name);
+  const fileName = req.params.name;
+
+  // 🔒 PROTEÇÃO DO blank.png
+  if (fileName.toLowerCase() === "blank.png") {
+    return res.status(403).json({
+      error: "O arquivo blank.png não pode ser excluído.",
+    });
+  }
+
+  const filePath = path.join(LOGOS_DIR, fileName);
 
   if (!fs.existsSync(filePath)) {
     return res.status(404).json({ error: "Arquivo não encontrado" });
