@@ -2,24 +2,20 @@ import path from "path";
 import fs from "fs";
 import puppeteer, { Browser } from "puppeteer-core";
 import xlsx from "xlsx";
+import { EventEmitter } from "events";
 
 const BASE_DIR = path.resolve();
 const OUTPUT_DIR = path.join(BASE_DIR, "output");
-const TMP_DIR = path.join(BASE_DIR, "tmp");
 const TEMPLATES_DIR = path.join(BASE_DIR, "templates");
 const LOGOS_DIR = path.join(BASE_DIR, "logos");
 const SELOS_DIR = path.join(BASE_DIR, "selos");
 
-export class CardGenerator {
+export class CardGenerator extends EventEmitter {
   private browser: Browser | null = null;
 
   async initialize() {
     if (!fs.existsSync(OUTPUT_DIR)) {
       fs.mkdirSync(OUTPUT_DIR, { recursive: true });
-    }
-
-    if (!fs.existsSync(TMP_DIR)) {
-      fs.mkdirSync(TMP_DIR, { recursive: true });
     }
 
     this.browser = await puppeteer.launch({
@@ -48,7 +44,7 @@ export class CardGenerator {
   }
 
   imageToBase64(imagePath: string): string {
-    if (!fs.existsSync(imagePath)) return "";
+    if (!imagePath || !fs.existsSync(imagePath)) return "";
     const ext = path.extname(imagePath).replace(".", "");
     const buffer = fs.readFileSync(imagePath);
     return `data:image/${ext};base64,${buffer.toString("base64")}`;
@@ -108,7 +104,6 @@ export class CardGenerator {
 
       const page = await this.browser.newPage();
       await page.setViewport({ width: 700, height: 1058 });
-
       await page.setContent(html, { waitUntil: "networkidle0" });
 
       await page.pdf({
@@ -119,6 +114,12 @@ export class CardGenerator {
       });
 
       await page.close();
+
+      this.emit("progress", {
+        current: index,
+        total: rows.length,
+      });
+
       index++;
     }
 
