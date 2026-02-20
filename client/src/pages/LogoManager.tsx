@@ -1,233 +1,100 @@
-import { useState, useRef, useEffect } from "react";
-import { Upload, AlertCircle, CheckCircle2, ArrowLeft, Sun, Moon } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { trpc } from "@/lib/trpc";
-import { useLocation } from "wouter";
+import { useEffect, useState } from "react";
 
-interface Logo {
-  name: string;
-  path: string;
-}
-
-export default function LogoManager() {
-  const [, navigate] = useLocation();
-
-  const [logos, setLogos] = useState<Logo[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isDark, setIsDark] = useState(true);
-  const [isDragging, setIsDragging] = useState(false); // NOVO ESTADO para feedback
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const { data: logosData, refetch } = trpc.logo.listLogos.useQuery();
+export default function Logos() {
+  const [logos, setLogos] = useState<string[]>([]);
 
   useEffect(() => {
-    if (logosData?.logos) {
-      setLogos(logosData.logos);
-    }
-  }, [logosData]);
+    fetch("/api/logos")
+      .then((res) => res.json())
+      .then((data) => setLogos(data));
+  }, []);
 
-  // Função centralizada para lidar com a seleção de arquivos
-  const handleFileSelect = async (file: File | null | undefined) => {
-    if (!file) return;
+  const handleDelete = async (logoName: string) => {
+    const confirmDelete = window.confirm(
+      `Deseja realmente excluir ${logoName}?`
+    );
 
-    if (!["image/png", "image/jpeg", "image/jpg"].includes(file.type)) {
-      setError("Apenas PNG, JPG e JPEG são permitidos");
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      setError("O arquivo não pode exceder 5MB");
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-    setSuccess(null);
+    if (!confirmDelete) return;
 
     try {
-      const formData = new FormData();
-      formData.append("logo", file);
-
-      const response = await fetch("/api/upload-logo", {
-        method: "POST",
-        body: formData,
+      const response = await fetch(`/api/logos/${logoName}`, {
+        method: "DELETE",
       });
 
       if (!response.ok) {
-        throw new Error("Erro ao enviar logo");
+        throw new Error("Erro ao excluir");
       }
 
-      setSuccess(`Logo "${file.name}" enviada com sucesso!`);
-      refetch(); // Recarrega a lista de logos
-
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao enviar logo");
-    } finally {
-      setIsLoading(false);
+      setLogos((prev) =>
+        prev.filter((item) => item !== logoName)
+      );
+    } catch (error) {
+      alert("Erro ao excluir logo.");
     }
   };
 
-  // Manipulador para o input de clique
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    handleFileSelect(e.target.files?.[0]);
-  };
-
-  // --- NOVOS MANIPULADORES DE DRAG AND DROP ---
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragging(false);
-  };
-
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragging(false);
-    if (isLoading) return;
-    const droppedFile = e.dataTransfer.files[0];
-    handleFileSelect(droppedFile);
-  };
-
-  // --- Estilos ---
-  const bgColor = isDark 
-    ? "bg-gradient-to-br from-gray-900 via-blue-950 to-purple-950" 
-    : "bg-gradient-to-br from-slate-100 via-blue-100 to-purple-100";
-  const cardBg = isDark 
-    ? "bg-white/10 backdrop-blur-lg border border-white/20" 
-    : "bg-white/50 backdrop-blur-lg border border-white/80";
-  const textPrimary = isDark ? "text-white" : "text-slate-900";
-  const textSecondary = isDark ? "text-slate-300" : "text-slate-600";
-  const borderColor = isDark ? "border-white/20" : "border-slate-300/50";
-  const accentColor = isDark ? "text-cyan-300" : "text-blue-600";
-  const uploadBg = isDark ? "bg-black/20" : "bg-white/30";
-  const uploadBorder = isDragging
-    ? (isDark ? 'border-cyan-300' : 'border-blue-600')
-    : (isDark ? "border-white/30 hover:border-white/50" : "border-blue-300/80 hover:border-blue-400");
-
   return (
-    <div className={`min-h-screen w-full py-12 px-4 sm:px-6 lg:px-8 transition-colors duration-500 ${bgColor}`}>
-      <div className="max-w-5xl mx-auto space-y-8">
-        
-        {/* ... (Header com Botão Voltar e Toggle permanece o mesmo) ... */}
-        <div className="flex items-center justify-between">
-          <Button
-            onClick={() => navigate("/")}
-            variant="outline"
-            className={`flex items-center gap-2 transition-all duration-300 ${
-              isDark 
-                ? 'bg-white/10 border-white/20 text-slate-200 hover:bg-white/20 hover:text-white' 
-                : 'bg-black/5 border-slate-400/50 text-slate-700 hover:bg-black/10'
-            }`}
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Voltar para Home
-          </Button>
+    <div style={{ padding: 40 }}>
+      <h2>Gerenciamento de Logos</h2>
 
-          <button
-            onClick={() => setIsDark(!isDark)}
-            className={`p-3 rounded-full transition-all duration-300 backdrop-blur-sm ${
-              isDark 
-                ? "bg-white/10 hover:bg-white/20 text-yellow-400" 
-                : "bg-black/10 hover:bg-black/20 text-slate-700"
-            }`}
-          >
-            {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-          </button>
-        </div>
+      <div className="grid">
+        {logos.map((logo) => (
+          <div key={logo} className="logo-card">
+            <img src={`/logos/${logo}`} alt={logo} />
 
-        {/* Upload Section */}
-        <div className={`p-8 rounded-2xl shadow-2xl ${cardBg}`}>
-          <h2 className={`text-2xl font-bold ${textPrimary} mb-4`}>
-            Gerenciador de Logos
-          </h2>
-
-          {/* --- ÁREA DE UPLOAD ATUALIZADA --- */}
-          <div
-            onClick={() => !isLoading && fileInputRef.current?.click()}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            className={`border-2 border-dashed rounded-lg p-8 text-center transition-all duration-300 ${uploadBorder} ${uploadBg} ${isLoading ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'}`}
-          >
-            <div className="flex flex-col items-center space-y-3 pointer-events-none">
-              <Upload className={`w-12 h-12 mx-auto mb-4 ${isDark ? 'text-slate-400' : 'text-slate-700'}`} />
-              <p className={`${textSecondary} mb-4`}>
-                Arraste ou clique para selecionar um arquivo
-              </p>
-              <Button
-                asChild
-                disabled={isLoading}
-                className={`text-white font-semibold transition-all duration-300 ${isDark ? 'bg-cyan-500/80 hover:bg-cyan-500' : 'bg-blue-600 hover:bg-blue-700'}`}
-              >
-                <span>{isLoading ? "Enviando..." : "Selecionar Logo"}</span>
-              </Button>
+            <div
+              className="delete-overlay"
+              onClick={() => handleDelete(logo)}
+            >
+              🗑
             </div>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/png,image/jpeg,image/jpg"
-              onChange={handleInputChange}
-              className="hidden"
-              disabled={isLoading}
-            />
           </div>
-
-          {/* ... (Mensagens de erro e sucesso permanecem as mesmas) ... */}
-          {error && (
-            <div className={`flex items-center gap-2 p-4 mt-4 rounded-lg ${isDark ? 'bg-red-500/20 border border-red-400/50 text-red-300' : 'bg-red-500/10 border border-red-500/20 text-red-700'}`}>
-              <AlertCircle className="w-5 h-5" />
-              {error}
-            </div>
-          )}
-
-          {success && (
-            <div className={`flex items-center gap-2 p-4 mt-4 rounded-lg ${isDark ? 'bg-green-500/20 border border-green-400/50 text-green-300' : 'bg-green-500/10 border border-green-500/20 text-green-700'}`}>
-              <CheckCircle2 className="w-5 h-5" />
-              {success}
-            </div>
-          )}
-        </div>
-
-        {/* ... (Seção da lista de logos permanece a mesma) ... */}
-        <div className={`p-8 rounded-2xl shadow-2xl ${cardBg}`}>
-          <h3 className={`text-xl font-bold ${textPrimary} mb-4`}>
-            Logos Disponíveis
-          </h3>
-
-          {logos.filter(logo => logo.name !== "blank.png").length === 0 ? (
-            <p className={textSecondary}>Nenhum logo disponível</p>
-          ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {logos
-                .filter(logo => logo.name !== "blank.png")
-                .map((logo) => (
-                  <div
-                    key={logo.name}
-                    className={`rounded-lg p-4 transition-all duration-300 border ${isDark ? 'bg-black/20 border-white/10 hover:bg-black/30' : 'bg-black/5 border-slate-400/20 hover:bg-black/10'}`}
-                  >
-                    <img
-                      src={`/logos/${logo.name}`}
-                      alt={logo.name}
-                      className="w-full h-32 object-contain mb-2"
-                      onError={(e) => { (e.target as HTMLImageElement).src = "/logos/blank.png"; }}
-                    />
-                    <p className={`text-sm truncate ${textSecondary}`}>
-                      {logo.name}
-                    </p>
-                  </div>
-                ))}
-            </div>
-          )}
-        </div>
+        ))}
       </div>
+
+      <style>{`
+        .grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, 180px);
+          gap: 20px;
+          margin-top: 30px;
+        }
+
+        .logo-card {
+          position: relative;
+          width: 180px;
+          height: 180px;
+          border-radius: 12px;
+          overflow: hidden;
+          border: 1px solid #ddd;
+          background: #fff;
+          cursor: pointer;
+        }
+
+        .logo-card img {
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+          padding: 15px;
+        }
+
+        .delete-overlay {
+          position: absolute;
+          inset: 0;
+          background: rgba(0, 0, 0, 0.65);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 40px;
+          color: white;
+          opacity: 0;
+          transition: 0.2s ease;
+        }
+
+        .logo-card:hover .delete-overlay {
+          opacity: 1;
+        }
+      `}</style>
     </div>
   );
 }
