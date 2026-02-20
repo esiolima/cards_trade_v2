@@ -178,14 +178,19 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 20px;
+  padding: 0 40px; /* margem interna segura */
   width: 100%;
   font-weight: 900;
   color: #ffffff;
-  font-size: clamp(40px, 5vw, 80px);
+
+  font-size: clamp(40px, 8vw, 110px); /* maior teto */
+  line-height: 1;
+
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+
+  max-width: 100%;
 }
 
 /* ===== RODAPÉ ===== */
