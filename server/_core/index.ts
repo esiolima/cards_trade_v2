@@ -12,6 +12,7 @@ const PORT = process.env.PORT || 3000;
 const BASE_DIR = process.cwd();
 const LOGOS_DIR = path.join(BASE_DIR, "logos");
 const OUTPUT_DIR = path.join(BASE_DIR, "output");
+const PUBLIC_DIR = path.join(BASE_DIR, "dist/public");
 
 // =============================
 // GARANTE PASTAS
@@ -30,7 +31,7 @@ if (!fs.existsSync(OUTPUT_DIR)) {
 app.use("/logos", express.static(LOGOS_DIR));
 
 // =============================
-// MULTER (UPLOAD LOGOS)
+// MULTER
 // =============================
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -64,12 +65,11 @@ app.post("/api/logos", upload.single("logo"), (req, res) => {
 });
 
 // =============================
-// DELETAR LOGO
+// DELETAR LOGO (PROTEGE blank.png)
 // =============================
 app.delete("/api/logos/:name", (req, res) => {
   const fileName = req.params.name;
 
-  // 🔒 PROTEÇÃO DO blank.png
   if (fileName.toLowerCase() === "blank.png") {
     return res.status(403).json({
       error: "O arquivo blank.png não pode ser excluído.",
@@ -103,7 +103,7 @@ app.post("/api/generate", upload.single("file"), async (req, res) => {
 
     await generator.close();
 
-    res.json({ success: true, zip: "/api/download" });
+    res.json({ success: true });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Erro ao gerar cards" });
@@ -122,6 +122,18 @@ app.get("/api/download", (req, res) => {
 
   res.download(zipPath);
 });
+
+// =============================
+// SERVIR FRONTEND BUILDADO
+// =============================
+if (fs.existsSync(PUBLIC_DIR)) {
+  app.use(express.static(PUBLIC_DIR));
+
+  // SPA fallback (React Router)
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(PUBLIC_DIR, "index.html"));
+  });
+}
 
 // =============================
 // START SERVER
