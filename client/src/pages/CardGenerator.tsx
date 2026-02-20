@@ -209,7 +209,7 @@ export default function CardGenerator() {
           </div>
 
           <div className="space-y-4">
-            {[{ icon: "✨", title: "Múltiplos Tipos", description: "Cupons, Promoções, Quedas de Preço e BC" }, { icon: "⚡", title: "Processamento Rápido", description: "Geração paralela com progresso em tempo real" }, { icon: "📦", title: "Download Fácil", description: "Todos os cards em um arquivo ZIP" }].map((feature, i) => (
+            {[{ icon: "✨", title: "Múltiplos Tipos", description: "Cupons, Promoções, Quedas de Preço, Cashback e BC" }, { icon: "⚡", title: "Processamento Rápido", description: "Geração paralela com progresso em tempo real" }, { icon: "📦", title: "Download Fácil", description: "Todos os cards em um arquivo ZIP" }].map((feature, i) => (
               <div key={i} className={`${cardBg} rounded-xl p-5 shadow-lg transition-all duration-300 hover:border-white/40`}>
                 <div className="flex items-start space-x-4">
                   <div className="text-2xl mt-1">{feature.icon}</div>
@@ -230,7 +230,7 @@ export default function CardGenerator() {
         {/* Rodapé Restaurado */}
         <div className={`mt-16 pt-8 border-t ${borderColor} text-center`}>
           <p className={`text-sm ${textSecondary}`}>
-            Desenvolvido por Esio Lima - Versão 2.0
+            Desenvolvido por Esio Lima - Versão 2.2
           </p>
         </div>
       </div>
