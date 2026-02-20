@@ -6,6 +6,7 @@ import xlsx from "xlsx";
 import { EventEmitter } from "events";
 
 const BASE_DIR = path.resolve();
+
 const OUTPUT_DIR = path.join(BASE_DIR, "output");
 const TMP_DIR = path.join(BASE_DIR, "tmp");
 const TEMPLATES_DIR = path.join(BASE_DIR, "templates");
@@ -28,48 +29,6 @@ interface CardData {
   urn?: string;
 }
 
-interface GenerationProgress {
-  total: number;
-  processed: number;
-  percentage: number;
-  currentCard: string;
-}
-
-function getTimestampFileName(): string {
-  const now = new Date();
-  const pad = (n: number) => n.toString().padStart(2, "0");
-
-  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(
-    now.getDate()
-  )}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(
-    now.getSeconds()
-  )}.zip`;
-}
-
-function normalizeType(tipo: string): string {
-  if (!tipo) return "";
-
-  const normalized = String(tipo)
-    .toLowerCase()
-    .trim()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
-
-  if (normalized.includes("promo")) return "promocao";
-  if (normalized.includes("cupom")) return "cupom";
-  if (normalized.includes("queda")) return "queda";
-  if (normalized === "bc") return "bc";
-
-  return "";
-}
-
-function imageToBase64(imagePath: string): string {
-  if (!fs.existsSync(imagePath)) return "";
-  const ext = path.extname(imagePath).replace(".", "");
-  const buffer = fs.readFileSync(imagePath);
-  return `data:image/${ext};base64,${buffer.toString("base64")}`;
-}
-
 export class CardGenerator extends EventEmitter {
   private browser: Browser | null = null;
 
@@ -88,39 +47,72 @@ export class CardGenerator extends EventEmitter {
     });
   }
 
+  normalizeType(tipo: string): string {
+    if (!tipo) return "";
+
+    const normalized = String(tipo)
+      .toLowerCase()
+      .trim()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+
+    if (normalized.includes("promo")) return "promocao";
+    if (normalized.includes("cupom")) return "cupom";
+    if (normalized.includes("queda")) return "queda";
+    if (normalized.includes("bc")) return "bc";
+
+    return "";
+  }
+
+  imageToBase64(imagePath: string): string {
+    if (!fs.existsSync(imagePath)) return "";
+    const ext = path.extname(imagePath).replace(".", "");
+    const buffer = fs.readFileSync(imagePath);
+    return `data:image/${ext};base64,${buffer.toString("base64")}`;
+  }
+
   async generateCards(excelFilePath: string): Promise<string> {
     if (!this.browser) throw new Error("Generator not initialized");
-
-    const oldFiles = fs.readdirSync(OUTPUT_DIR);
-    for (const file of oldFiles) {
-      fs.unlinkSync(path.join(OUTPUT_DIR, file));
-    }
 
     const workbook = xlsx.readFile(excelFilePath);
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const rows = xlsx.utils.sheet_to_json<CardData>(sheet, { defval: "" });
 
-    const validRows = rows.filter((row) => {
-      const tipo = normalizeType(row.tipo);
-      return tipo && fs.existsSync(path.join(TEMPLATES_DIR, `${tipo}.html`));
-    });
+    if (rows.length === 0) {
+      console.log("PLANILHA VAZIA");
+      return "PLANILHA_VAZIA";
+    }
 
     let processed = 0;
 
-    for (const row of validRows) {
-      const tipo = normalizeType(row.tipo);
+    for (const row of rows) {
+      const tipo = this.normalizeType(row.tipo);
+
+      if (!tipo) {
+        console.log("TIPO NÃO RECONHECIDO:", row.tipo);
+        continue;
+      }
+
       const templatePath = path.join(TEMPLATES_DIR, `${tipo}.html`);
+
+      if (!fs.existsSync(templatePath)) {
+        console.log("TEMPLATE NÃO ENCONTRADO:", templatePath);
+        continue;
+      }
+
       let html = fs.readFileSync(templatePath, "utf8");
 
+      // REGRA DO VALOR
       let valorFinal =
         tipo === "promocao"
           ? String(row.valor ?? "")
           : String(row.valor ?? "").replace(/%/g, "");
 
+      // SELO
       let seloBase64 = "";
-
       if (row.selo) {
         const selo = String(row.selo).toLowerCase().trim();
+
         const seloFile =
           selo === "nova"
             ? "acaonova.png"
@@ -129,13 +121,18 @@ export class CardGenerator extends EventEmitter {
             : "";
 
         if (seloFile) {
-          seloBase64 = imageToBase64(path.join(SELOS_DIR, seloFile));
+          seloBase64 = this.imageToBase64(
+            path.join(SELOS_DIR, seloFile)
+          );
         }
       }
 
+      // LOGO
       let logoBase64 = "";
       if (row.logo) {
-        logoBase64 = imageToBase64(path.join(LOGOS_DIR, row.logo));
+        logoBase64 = this.imageToBase64(
+          path.join(LOGOS_DIR, row.logo)
+        );
       }
 
       const ufFinal = row.uf ? `UF: ${row.uf}` : "";
@@ -157,14 +154,20 @@ export class CardGenerator extends EventEmitter {
       fs.writeFileSync(tmpHtmlPath, html);
 
       const page = await this.browser.newPage();
+
       await page.setViewport({ width: 700, height: 1058 });
 
       await page.goto(`file://${tmpHtmlPath}`, {
         waitUntil: "networkidle0",
       });
 
+      const pdfPath = path.join(
+        OUTPUT_DIR,
+        `card_${processed + 1}.pdf`
+      );
+
       await page.pdf({
-        path: path.join(OUTPUT_DIR, `card_${processed + 1}.pdf`),
+        path: pdfPath,
         width: "700px",
         height: "1058px",
         printBackground: true,
@@ -172,7 +175,15 @@ export class CardGenerator extends EventEmitter {
       });
 
       await page.close();
+
+      console.log("CARD GERADO:", pdfPath);
+
       processed++;
+    }
+
+    if (processed === 0) {
+      console.log("NENHUM CARD FOI GERADO");
+      return "SEM_CARDS";
     }
 
     return "OK";
