@@ -7,6 +7,7 @@ import { EventEmitter } from "events";
 
 const BASE_DIR = path.resolve();
 const OUTPUT_DIR = path.join(BASE_DIR, "output");
+const TMP_DIR = path.join(BASE_DIR, "tmp");
 const TEMPLATES_DIR = path.join(BASE_DIR, "templates");
 const LOGOS_DIR = path.join(BASE_DIR, "logos");
 const SELOS_DIR = path.join(BASE_DIR, "selos");
@@ -15,9 +16,11 @@ export class CardGenerator extends EventEmitter {
   private browser: Browser | null = null;
 
   async initialize() {
-    if (!fs.existsSync(OUTPUT_DIR)) {
+    if (!fs.existsSync(OUTPUT_DIR))
       fs.mkdirSync(OUTPUT_DIR, { recursive: true });
-    }
+
+    if (!fs.existsSync(TMP_DIR))
+      fs.mkdirSync(TMP_DIR, { recursive: true });
 
     this.browser = await puppeteer.launch({
       executablePath:
@@ -54,20 +57,19 @@ export class CardGenerator extends EventEmitter {
   async generateCards(excelFilePath: string): Promise<string> {
     if (!this.browser) throw new Error("Browser not initialized");
 
-    // limpa PDFs antigos
-    if (fs.existsSync(OUTPUT_DIR)) {
-      fs.readdirSync(OUTPUT_DIR).forEach((file) => {
-        if (file.endsWith(".pdf") || file.endsWith(".zip")) {
-          fs.unlinkSync(path.join(OUTPUT_DIR, file));
-        }
-      });
-    }
+    // limpa output antigo
+    fs.readdirSync(OUTPUT_DIR).forEach((file) => {
+      if (file.endsWith(".pdf") || file.endsWith(".zip")) {
+        fs.unlinkSync(path.join(OUTPUT_DIR, file));
+      }
+    });
 
     const workbook = xlsx.readFile(excelFilePath);
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const rows: any[] = xlsx.utils.sheet_to_json(sheet, { defval: "" });
 
-    let index = 1;
+    const total = rows.length;
+    let processed = 0;
 
     for (const row of rows) {
       const tipo = this.normalizeType(row.tipo);
@@ -78,6 +80,7 @@ export class CardGenerator extends EventEmitter {
 
       let html = fs.readFileSync(templatePath, "utf8");
 
+      // REGRA DO VALOR
       const valorFinal =
         tipo === "promocao"
           ? String(row.valor ?? "")
@@ -112,11 +115,21 @@ export class CardGenerator extends EventEmitter {
         .replaceAll("{{LOGO}}", logoBase64)
         .replaceAll("{{SELO}}", seloBase64);
 
+      // 🔥 VOLTAMOS PARA page.goto (resolve fonte e layout)
+      const tmpHtmlPath = path.join(TMP_DIR, `card_${processed + 1}.html`);
+      fs.writeFileSync(tmpHtmlPath, html);
+
       const page = await this.browser.newPage();
       await page.setViewport({ width: 700, height: 1058 });
-      await page.setContent(html, { waitUntil: "networkidle0" });
 
-      const pdfPath = path.join(OUTPUT_DIR, `card_${index}.pdf`);
+      await page.goto(`file://${tmpHtmlPath}`, {
+        waitUntil: "networkidle0",
+      });
+
+      const pdfPath = path.join(
+        OUTPUT_DIR,
+        `card_${processed + 1}.pdf`
+      );
 
       await page.pdf({
         path: pdfPath,
@@ -127,16 +140,17 @@ export class CardGenerator extends EventEmitter {
 
       await page.close();
 
-      this.emit("progress", {
-        current: index,
-        total: rows.length,
-        percentage: Math.round((index / rows.length) * 100),
-      });
+      processed++;
 
-      index++;
+      // 🔥 PROGRESSO CORRETO (resolve NaN)
+      this.emit("progress", {
+        processed,
+        total,
+        percentage: Math.round((processed / total) * 100),
+      });
     }
 
-    // gera ZIP
+    // GERA ZIP
     const zipPath = path.join(OUTPUT_DIR, "cards.zip");
     const output = fs.createWriteStream(zipPath);
     const archive = archiver("zip", { zlib: { level: 9 } });
