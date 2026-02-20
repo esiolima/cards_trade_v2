@@ -95,6 +95,7 @@ export class CardGenerator extends EventEmitter {
   ): Promise<string> {
     if (!this.browser) throw new Error("Generator not initialized");
 
+    // limpa output
     const oldFiles = fs.readdirSync(OUTPUT_DIR);
     for (const file of oldFiles) {
       fs.unlinkSync(path.join(OUTPUT_DIR, file));
@@ -122,7 +123,7 @@ export class CardGenerator extends EventEmitter {
           ? String(row.valor ?? "")
           : sanitizePercentage(row.valor);
 
-      // ✅ CORREÇÃO DEFINITIVA DO SELO
+      // ✅ LÓGICA CORRIGIDA DO SELO
       let seloBase64 = "";
 
       if (row.selo) {
@@ -179,6 +180,9 @@ export class CardGenerator extends EventEmitter {
       await page.goto(`file://${tmpHtmlPath}`, {
         waitUntil: "networkidle0",
       });
+
+      // ✅ AGUARDA AUTO-FIT TERMINAR
+      await page.waitForFunction(() => (window as any).autoFitDone === true);
 
       const ordem = String(row.ordem || processed + 1).trim();
       const categoria = String(row.categoria || "SEM_CATEGORIA")
