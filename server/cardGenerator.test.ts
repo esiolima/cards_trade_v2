@@ -57,7 +57,6 @@ export class CardGenerator extends EventEmitter {
   async generateCards(excelFilePath: string): Promise<string> {
     if (!this.browser) throw new Error("Browser not initialized");
 
-    // limpa arquivos antigos
     fs.readdirSync(OUTPUT_DIR).forEach((file) => {
       if (file.endsWith(".pdf") || file.endsWith(".zip")) {
         fs.unlinkSync(path.join(OUTPUT_DIR, file));
@@ -80,22 +79,53 @@ export class CardGenerator extends EventEmitter {
 
       let html = fs.readFileSync(templatePath, "utf8");
 
-      // REGRA DO VALOR
-      const valorFinal =
-        tipo === "promocao"
-          ? String(row.valor ?? "")
-          : String(row.valor ?? "").replace(/%/g, "");
+      // ================================
+      // REGRA INTELIGENTE DO VALOR
+      // ================================
+      let valorFinal = String(row.valor ?? "").trim();
 
-      // 🔥 LOGO PADRÃO (blank.png)
-      let logoFile = row.logo && row.logo.trim() !== ""
-        ? row.logo
-        : "blank.png";
+      if (tipo === "promocao") {
+        // mantém exatamente como está
+        valorFinal = valorFinal;
+      }
+
+      if (["cupom", "queda", "bc"].includes(tipo)) {
+
+        // mantém apenas números e vírgula
+        valorFinal = valorFinal.replace(/[^0-9,]/g, "");
+
+        // mantém apenas a primeira vírgula
+        const partes = valorFinal.split(",");
+        if (partes.length > 2) {
+          valorFinal = partes[0] + "," + partes.slice(1).join("");
+        }
+
+        // remove vírgula no início
+        if (valorFinal.startsWith(",")) {
+          valorFinal = valorFinal.substring(1);
+        }
+
+        // remove vírgula no final
+        if (valorFinal.endsWith(",")) {
+          valorFinal = valorFinal.slice(0, -1);
+        }
+      }
+
+      // ================================
+      // LOGO PADRÃO
+      // ================================
+      let logoFile =
+        row.logo && String(row.logo).trim() !== ""
+          ? String(row.logo).trim()
+          : "blank.png";
 
       const logoBase64 = this.imageToBase64(
         path.join(LOGOS_DIR, logoFile)
       );
 
+      // ================================
       // SELO
+      // ================================
       const seloBase64 = row.selo
         ? this.imageToBase64(
             path.join(
@@ -131,7 +161,6 @@ export class CardGenerator extends EventEmitter {
         waitUntil: "networkidle0",
       });
 
-      // 🔥 NOME DO PDF = ordem_tipo
       const ordem = row.ordem ? String(row.ordem).trim() : processed + 1;
       const pdfName = `${ordem}_${tipo}.pdf`;
       const pdfPath = path.join(OUTPUT_DIR, pdfName);
@@ -154,7 +183,6 @@ export class CardGenerator extends EventEmitter {
       });
     }
 
-    // GERA ZIP
     const zipPath = path.join(OUTPUT_DIR, "cards.zip");
     const output = fs.createWriteStream(zipPath);
     const archive = archiver("zip", { zlib: { level: 9 } });
