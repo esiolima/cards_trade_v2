@@ -1,125 +1,181 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { CardGenerator } from "./cardGenerator";
 import path from "path";
 import fs from "fs";
+import puppeteer, { Browser } from "puppeteer-core";
+import archiver from "archiver";
 import xlsx from "xlsx";
+import { EventEmitter } from "events";
 
-describe("CardGenerator", () => {
-  let generator: CardGenerator;
+const BASE_DIR = path.resolve();
+const OUTPUT_DIR = path.join(BASE_DIR, "output");
+const TMP_DIR = path.join(BASE_DIR, "tmp");
+const TEMPLATES_DIR = path.join(BASE_DIR, "templates");
+const LOGOS_DIR = path.join(BASE_DIR, "logos");
+const SELOS_DIR = path.join(BASE_DIR, "selos");
 
-  beforeAll(async () => {
-    generator = new CardGenerator();
-    await generator.initialize();
-  });
+export class CardGenerator extends EventEmitter {
+  private browser: Browser | null = null;
 
-  afterAll(async () => {
-    await generator.close();
-  });
+  async initialize() {
+    if (!fs.existsSync(OUTPUT_DIR))
+      fs.mkdirSync(OUTPUT_DIR, { recursive: true });
 
-  it("should initialize without errors", async () => {
-    expect(generator).toBeDefined();
-  });
+    if (!fs.existsSync(TMP_DIR))
+      fs.mkdirSync(TMP_DIR, { recursive: true });
 
-  it("should create output directory", () => {
-    const outputDir = path.resolve("output");
-    expect(fs.existsSync(outputDir)).toBe(true);
-  });
+    this.browser = await puppeteer.launch({
+      executablePath:
+        process.env.PUPPETEER_EXECUTABLE_PATH || "/usr/bin/chromium",
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+      headless: true,
+    });
+  }
 
-  it("should create tmp directory", () => {
-    const tmpDir = path.resolve("tmp");
-    expect(fs.existsSync(tmpDir)).toBe(true);
-  });
+  normalizeType(tipo: string): string {
+    if (!tipo) return "";
 
-  it("should generate cards from valid Excel file", async () => {
-    // Create a test Excel file
-    const testData = [
-      {
-        tipo: "CUPOM",
-        logo: "intelbras.png",
-        cupom: "TEST123",
-        texto: "Test promotion",
-        valor: "50",
-        legal: "Test legal",
-        uf: "SP",
-        segmento: "TODOS",
-      },
-    ];
+    const normalized = String(tipo)
+      .toLowerCase()
+      .trim()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
 
-    const ws = xlsx.utils.json_to_sheet(testData);
-    const wb = xlsx.utils.book_new();
-    xlsx.utils.book_append_sheet(wb, ws, "Sheet1");
+    if (normalized.includes("promo")) return "promocao";
+    if (normalized.includes("cupom")) return "cupom";
+    if (normalized.includes("queda")) return "queda";
+    if (normalized.includes("bc")) return "bc";
 
-    const testFilePath = path.resolve("test_input.xlsx");
-    xlsx.writeFile(wb, testFilePath);
+    return "";
+  }
 
-    try {
-      const zipPath = await generator.generateCards(testFilePath);
+  imageToBase64(imagePath: string): string {
+    if (!imagePath || !fs.existsSync(imagePath)) return "";
+    const ext = path.extname(imagePath).replace(".", "");
+    const buffer = fs.readFileSync(imagePath);
+    return `data:image/${ext};base64,${buffer.toString("base64")}`;
+  }
 
-      expect(fs.existsSync(zipPath)).toBe(true);
-      expect(zipPath.endsWith(".zip")).toBe(true);
+  async generateCards(excelFilePath: string): Promise<string> {
+    if (!this.browser) throw new Error("Browser not initialized");
 
-      // Cleanup
-      fs.unlinkSync(testFilePath);
-    } catch (error) {
-      // Cleanup on error
-      if (fs.existsSync(testFilePath)) {
-        fs.unlinkSync(testFilePath);
+    // limpa arquivos antigos
+    fs.readdirSync(OUTPUT_DIR).forEach((file) => {
+      if (file.endsWith(".pdf") || file.endsWith(".zip")) {
+        fs.unlinkSync(path.join(OUTPUT_DIR, file));
       }
-      throw error;
-    }
-  });
+    });
 
-  it("should emit progress events", async () => {
-    const testData = [
-      {
-        tipo: "PROMO",
-        logo: "dove.png",
-        texto: "Test promo 1",
-        valor: "30",
-        legal: "Test legal",
-        uf: "RJ",
-        segmento: "TODOS",
-      },
-      {
-        tipo: "QUEDA",
-        logo: "alpargatas.png",
-        texto: "Test queda",
-        valor: "20",
-        legal: "Test legal",
-        uf: "MG",
-        segmento: "TODOS",
-      },
-    ];
+    const workbook = xlsx.readFile(excelFilePath);
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const rows: any[] = xlsx.utils.sheet_to_json(sheet, { defval: "" });
 
-    const ws = xlsx.utils.json_to_sheet(testData);
-    const wb = xlsx.utils.book_new();
-    xlsx.utils.book_append_sheet(wb, ws, "Sheet1");
+    const total = rows.length;
+    let processed = 0;
 
-    const testFilePath = path.resolve("test_progress.xlsx");
-    xlsx.writeFile(wb, testFilePath);
+    for (const row of rows) {
+      const tipo = this.normalizeType(row.tipo);
+      if (!tipo) continue;
 
-    try {
-      const progressEvents: any[] = [];
+      const templatePath = path.join(TEMPLATES_DIR, `${tipo}.html`);
+      if (!fs.existsSync(templatePath)) continue;
 
-      generator.on("progress", (progress) => {
-        progressEvents.push(progress);
+      let html = fs.readFileSync(templatePath, "utf8");
+
+      // REGRA DO VALOR
+      const valorFinal =
+        tipo === "promocao"
+          ? String(row.valor ?? "")
+          : String(row.valor ?? "").replace(/%/g, "");
+
+      // 🔥 LOGO PADRÃO (blank.png)
+      let logoFile = row.logo && row.logo.trim() !== ""
+        ? row.logo
+        : "blank.png";
+
+      const logoBase64 = this.imageToBase64(
+        path.join(LOGOS_DIR, logoFile)
+      );
+
+      // SELO
+      const seloBase64 = row.selo
+        ? this.imageToBase64(
+            path.join(
+              SELOS_DIR,
+              row.selo.toLowerCase() === "nova"
+                ? "acaonova.png"
+                : row.selo.toLowerCase() === "renovada"
+                ? "acaorenovada.png"
+                : ""
+            )
+          )
+        : "";
+
+      html = html
+        .replaceAll("{{TEXTO}}", String(row.texto ?? ""))
+        .replaceAll("{{VALOR}}", valorFinal)
+        .replaceAll("{{COMPLEMENTO}}", String(row.complemento ?? ""))
+        .replaceAll("{{LEGAL}}", String(row.legal ?? ""))
+        .replaceAll("{{SEGMENTO}}", String(row.segmento ?? ""))
+        .replaceAll("{{CUPOM}}", String(row.cupom ?? ""))
+        .replaceAll("{{UF}}", row.uf ? `UF: ${row.uf}` : "")
+        .replaceAll("{{URN}}", row.urn ? `URN: ${row.urn}` : "")
+        .replaceAll("{{LOGO}}", logoBase64)
+        .replaceAll("{{SELO}}", seloBase64);
+
+      const tmpHtmlPath = path.join(TMP_DIR, `card_${processed + 1}.html`);
+      fs.writeFileSync(tmpHtmlPath, html);
+
+      const page = await this.browser.newPage();
+      await page.setViewport({ width: 700, height: 1058 });
+
+      await page.goto(`file://${tmpHtmlPath}`, {
+        waitUntil: "networkidle0",
       });
 
-      await generator.generateCards(testFilePath);
+      // 🔥 NOME DO PDF = ordem_tipo
+      const ordem = row.ordem ? String(row.ordem).trim() : processed + 1;
+      const pdfName = `${ordem}_${tipo}.pdf`;
+      const pdfPath = path.join(OUTPUT_DIR, pdfName);
 
-      expect(progressEvents.length).toBeGreaterThan(0);
-      expect(progressEvents[0]).toHaveProperty("total");
-      expect(progressEvents[0]).toHaveProperty("processed");
-      expect(progressEvents[0]).toHaveProperty("percentage");
+      await page.pdf({
+        path: pdfPath,
+        width: "700px",
+        height: "1058px",
+        printBackground: true,
+      });
 
-      // Cleanup
-      fs.unlinkSync(testFilePath);
-    } catch (error) {
-      // Cleanup on error
-      if (fs.existsSync(testFilePath)) {
-        fs.unlinkSync(testFilePath);
-      }
-      throw error;
+      await page.close();
+
+      processed++;
+
+      this.emit("progress", {
+        processed,
+        total,
+        percentage: Math.round((processed / total) * 100),
+      });
     }
-  });
-});
+
+    // GERA ZIP
+    const zipPath = path.join(OUTPUT_DIR, "cards.zip");
+    const output = fs.createWriteStream(zipPath);
+    const archive = archiver("zip", { zlib: { level: 9 } });
+
+    archive.pipe(output);
+
+    fs.readdirSync(OUTPUT_DIR).forEach((file) => {
+      if (file.endsWith(".pdf")) {
+        archive.file(path.join(OUTPUT_DIR, file), { name: file });
+      }
+    });
+
+    await archive.finalize();
+
+    return zipPath;
+  }
+
+  async close() {
+    if (this.browser) {
+      await this.browser.close();
+      this.browser = null;
+    }
+  }
+}
