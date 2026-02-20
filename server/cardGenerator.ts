@@ -42,7 +42,8 @@ export class CardGenerator extends EventEmitter {
     if (normalized.includes("promo")) return "promocao";
     if (normalized.includes("cupom")) return "cupom";
     if (normalized.includes("queda")) return "queda";
-    if (normalized.includes("bc")) return "bc";
+    if (normalized.includes("cashback")) return "cashback";
+    if (normalized === "bc") return "bc";
 
     return "";
   }
@@ -57,7 +58,6 @@ export class CardGenerator extends EventEmitter {
   async generateCards(excelFilePath: string): Promise<string> {
     if (!this.browser) throw new Error("Browser not initialized");
 
-    // limpa arquivos antigos
     fs.readdirSync(OUTPUT_DIR).forEach((file) => {
       if (file.endsWith(".pdf") || file.endsWith(".zip")) {
         fs.unlinkSync(path.join(OUTPUT_DIR, file));
@@ -129,13 +129,11 @@ export class CardGenerator extends EventEmitter {
         waitUntil: "networkidle0",
       });
 
-      // 🔥 ORDEM
       const ordemFinal =
         row.ordem && String(row.ordem).trim() !== ""
           ? String(row.ordem).trim()
           : String(processed + 1);
 
-      // 🔥 CATEGORIA (opcional)
       let categoriaFinal = "";
 
       if (row.categoria && String(row.categoria).trim() !== "") {
