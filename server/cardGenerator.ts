@@ -123,7 +123,7 @@ export class CardGenerator extends EventEmitter {
           ? String(row.valor ?? "")
           : sanitizePercentage(row.valor);
 
-      // ✅ LÓGICA CORRIGIDA DO SELO
+      // SEL0 CORRIGIDO
       let seloBase64 = "";
 
       if (row.selo) {
@@ -181,8 +181,24 @@ export class CardGenerator extends EventEmitter {
         waitUntil: "networkidle0",
       });
 
-      // ✅ AGUARDA AUTO-FIT TERMINAR
-      await page.waitForFunction(() => (window as any).autoFitDone === true);
+      // AUTO-FIT EXECUTADO DIRETAMENTE VIA PUPPETEER
+      await page.evaluate(() => {
+        const container = document.getElementById("percentual");
+        const numero = document.getElementById("numero");
+        const percent = document.getElementById("percent");
+
+        if (!container || !numero || !percent) return;
+
+        let fontSize = 240;
+        numero.style.fontSize = fontSize + "px";
+        percent.style.fontSize = fontSize + "px";
+
+        while (container.scrollWidth > container.clientWidth && fontSize > 60) {
+          fontSize -= 2;
+          numero.style.fontSize = fontSize + "px";
+          percent.style.fontSize = fontSize + "px";
+        }
+      });
 
       const ordem = String(row.ordem || processed + 1).trim();
       const categoria = String(row.categoria || "SEM_CATEGORIA")
