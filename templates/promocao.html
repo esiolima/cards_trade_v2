@@ -28,6 +28,7 @@
 * {
   text-transform: uppercase;
   color: #2b4474;
+  box-sizing: border-box;
 }
 
 body {
@@ -35,21 +36,25 @@ body {
   width: 700px;
   height: 1058px;
   font-family: 'Inter', sans-serif;
-  background: #f3f3f3;
+  background: transparent; /* ← corrigido */
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
+/* CARD */
 .card {
-  width: 100%;
-  height: 100%;
+  width: 700px;
+  height: 1058px;
   border: 8px solid #e0b84b;
   border-radius: 40px;
-  box-sizing: border-box;
   padding: 80px 40px 60px 40px;
   position: relative;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   align-items: center;
+  background: #ffffff; /* fundo branco real do card */
 }
 
 /* SELO */
@@ -78,7 +83,7 @@ body {
   max-height: 120px;
 }
 
-/* TARJA PROMOÇÃO */
+/* TARJA */
 .tarja {
   margin-top: 35px;
   background: #ff7a00;
@@ -95,7 +100,6 @@ body {
   color: #ffffff;
   font-weight: 700;
   font-size: 54px;
-  letter-spacing: 0;
 }
 
 /* TEXTO SUPERIOR */
@@ -128,13 +132,13 @@ body {
   white-space: nowrap;
 }
 
-/* AREA DE CONTEÚDO INFERIOR - Agrupada conforme a imagem */
+/* CONTEÚDO INFERIOR */
 .conteudo-inferior {
   width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-top: 40px; /* Espaço após o VALOR */
+  margin-top: 40px;
 }
 
 /* COMPLEMENTO */
@@ -145,7 +149,7 @@ body {
   max-width: 550px;
   line-height: 1.15;
   word-break: break-word;
-  margin-bottom: 25px; /* Espaço entre complemento e legal */
+  margin-bottom: 25px;
 }
 
 /* LEGAL */
@@ -155,7 +159,7 @@ body {
   max-width: 550px;
   line-height: 1.15;
   word-break: break-word;
-  margin-bottom: 30px; /* Espaço entre legal e UF */
+  margin-bottom: 30px;
 }
 
 /* RODAPÉ */
@@ -164,7 +168,7 @@ body {
 }
 
 .uf, .urn {
-  font-size: clamp(16px, 2vw, 24px);
+  font-size: clamp(20px, 2vw, 24px);
   font-weight: 700;
 }
 
@@ -174,12 +178,12 @@ body {
 
 .segmento-label {
   margin-top: 12px;
-  font-size: clamp(12px, 1.5vw, 18px);
+  font-size: 18px;
   display: block;
 }
 
 .segmento-valor {
-  font-size: clamp(16px, 2vw, 25px);
+  font-size: 25px;
   font-weight: 700;
   display: block;
 }
@@ -191,34 +195,28 @@ body {
 
 <div class="card">
 
-  <!-- SELO -->
   <div class="selo">
     <img src="{{SELO}}" />
   </div>
 
-  <!-- LOGO -->
   <div class="logo">
     <img src="{{LOGO}}" />
   </div>
 
-  <!-- TARJA PROMOÇÃO -->
   <div class="tarja">
     <span>PROMOÇÃO</span>
   </div>
 
-  <!-- TEXTO -->
   <div class="texto-topo">
     {{TEXTO}}
   </div>
 
-  <!-- VALOR -->
   <div class="valor-container" id="valor-container">
     <div class="valor-texto" id="valor-texto">
       {{VALOR}}
     </div>
   </div>
 
-  <!-- CONTAINER PARA ELEMENTOS INFERIORES -->
   <div class="conteudo-inferior">
     <div class="complemento">
       {{COMPLEMENTO}}
