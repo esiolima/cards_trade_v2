@@ -58,6 +58,7 @@ export class CardGenerator extends EventEmitter {
   async generateCards(excelFilePath: string): Promise<string> {
     if (!this.browser) throw new Error("Browser not initialized");
 
+    // Limpa PDFs e ZIP antigos
     fs.readdirSync(OUTPUT_DIR).forEach((file) => {
       if (file.endsWith(".pdf") || file.endsWith(".zip")) {
         fs.unlinkSync(path.join(OUTPUT_DIR, file));
@@ -80,10 +81,12 @@ export class CardGenerator extends EventEmitter {
 
       let html = fs.readFileSync(templatePath, "utf8");
 
-      const valorFinal =
-        tipo === "promocao"
-          ? String(row.valor ?? "")
-          : String(row.valor ?? "").replace(/%/g, "");
+      // === REGRA NOVA DO VALOR ===
+      let valorFinal = String(row.valor ?? "");
+
+      if (tipo !== "promocao") {
+        valorFinal = valorFinal.replace(/%/g, "").trim();
+      }
 
       const logoFile =
         row.logo && String(row.logo).trim() !== ""
@@ -170,7 +173,10 @@ export class CardGenerator extends EventEmitter {
       });
     }
 
-    const zipPath = path.join(OUTPUT_DIR, "cards.zip");
+    // === NOME DO ZIP IGUAL AO DA PLANILHA ===
+    const baseName = path.parse(excelFilePath).name;
+    const zipPath = path.join(OUTPUT_DIR, `${baseName}.zip`);
+
     const output = fs.createWriteStream(zipPath);
     const archive = archiver("zip", { zlib: { level: 9 } });
 
