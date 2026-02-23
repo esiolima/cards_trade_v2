@@ -81,17 +81,23 @@ export class CardGenerator extends EventEmitter {
 
       let html = fs.readFileSync(templatePath, "utf8");
 
-      // === REGRA NOVA DO VALOR ===
+      // === REGRA DO VALOR (mantida da versão anterior) ===
       let valorFinal = String(row.valor ?? "");
-
       if (tipo !== "promocao") {
         valorFinal = valorFinal.replace(/%/g, "").trim();
       }
 
-      const logoFile =
-        row.logo && String(row.logo).trim() !== ""
-          ? String(row.logo).trim()
-          : "blank.png";
+      // === LOGO COM FALLBACK AUTOMÁTICO ===
+      let logoFile = "blank.png";
+
+      if (row.logo && String(row.logo).trim() !== "") {
+        const possibleLogo = String(row.logo).trim();
+        const possiblePath = path.join(LOGOS_DIR, possibleLogo);
+
+        if (fs.existsSync(possiblePath)) {
+          logoFile = possibleLogo;
+        }
+      }
 
       const logoBase64 = this.imageToBase64(
         path.join(LOGOS_DIR, logoFile)
@@ -137,22 +143,7 @@ export class CardGenerator extends EventEmitter {
           ? String(row.ordem).trim()
           : String(processed + 1);
 
-      let categoriaFinal = "";
-
-      if (row.categoria && String(row.categoria).trim() !== "") {
-        categoriaFinal = String(row.categoria)
-          .trim()
-          .toLowerCase()
-          .normalize("NFD")
-          .replace(/[\u0300-\u036f]/g, "")
-          .replace(/\s+/g, "_")
-          .replace(/[^a-z0-9_]/g, "");
-      }
-
-      const pdfName = categoriaFinal
-        ? `${ordemFinal}_${tipo}_${categoriaFinal}.pdf`
-        : `${ordemFinal}_${tipo}.pdf`;
-
+      const pdfName = `${ordemFinal}_${tipo}.pdf`;
       const pdfPath = path.join(OUTPUT_DIR, pdfName);
 
       await page.pdf({
@@ -173,7 +164,7 @@ export class CardGenerator extends EventEmitter {
       });
     }
 
-    // === NOME DO ZIP IGUAL AO DA PLANILHA ===
+    // === ZIP COM NOME IGUAL AO DA PLANILHA ===
     const baseName = path.parse(excelFilePath).name;
     const zipPath = path.join(OUTPUT_DIR, `${baseName}.zip`);
 
