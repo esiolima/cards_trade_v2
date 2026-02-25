@@ -12,13 +12,11 @@
   src: url('../fonts/Inter-Regular.ttf') format('truetype');
   font-weight: 400;
 }
-
 @font-face {
   font-family: 'Inter';
   src: url('../fonts/Inter-Bold.ttf') format('truetype');
   font-weight: 700;
 }
-
 @font-face {
   font-family: 'Inter';
   src: url('../fonts/Inter-Black.ttf') format('truetype');
@@ -44,44 +42,48 @@ body {
 
 .card {
   width: 700px;
-  height: 1058px; /* FIXO */
+  height: 1058px;
   border: 8px solid #e0b84b;
   border-radius: 40px;
   background: #ffffff;
-  padding: 70px 40px 60px 40px;
+  padding: 60px 40px 40px 40px;
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
   overflow: hidden;
   position: relative;
 }
 
-/* SELO */
+/* SELO PADRÃO */
 .selo {
   position: absolute;
   top: 0;
   left: 0;
-  width: 100px;
-  height: 100px;
+  width: 130px;
+  height: 65px;
+  z-index: 10;
 }
-
 .selo img {
   width: 100%;
   height: 100%;
   object-fit: contain;
 }
 
-/* LOGO */
-.logo {
-  text-align: center;
-  margin-bottom: 30px;
+/* TOPO */
+.topo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
+.logo {
+  margin-bottom: 20px;
+}
 .logo img {
   max-width: 240px;
   max-height: 120px;
 }
 
-/* TARJA */
 .tarja {
   background: #15803d;
   color: #ffffff;
@@ -90,24 +92,24 @@ body {
   text-align: center;
   padding: 18px 40px;
   border-radius: 999px;
-  margin: 20px auto 30px auto;
+  margin-bottom: 30px;
   white-space: nowrap;
 }
 
-/* AREA CENTRAL FLEXÍVEL */
+/* BLOCO CENTRAL MAIS COMPACTO */
 .area-central {
-  flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  text-align: center;
+  align-items: center;
+  gap: 25px; /* controla espaçamento vertical */
 }
 
-/* TEXTO */
+/* TEXTO REDUZIDO */
 .texto-topo {
   font-size: 26px;
-  margin-bottom: 40px;
   line-height: 1.2;
+  max-width: 560px;
+  text-align: center;
   word-break: break-word;
 }
 
@@ -115,36 +117,39 @@ body {
 .valor-container {
   display: flex;
   justify-content: center;
-  align-items: center;
-  margin-bottom: 20px;
+  align-items: flex-end;
 }
 
 .valor-texto {
   font-weight: 900;
-  font-size: 260px;
+  font-size: clamp(140px, 22vw, 260px);
   line-height: 1;
   white-space: nowrap;
 }
 
-/* DESCONTO */
 .desconto {
   font-size: 44px;
   font-weight: 700;
-  margin-bottom: 40px;
 }
 
-/* COMPLEMENTO */
 .complemento {
   font-size: 24px;
   line-height: 1.2;
   max-width: 560px;
-  margin: 0 auto;
+  text-align: center;
   word-break: break-word;
 }
 
-/* RODAPÉ FIXO DENTRO DO CARD */
+.legal {
+  font-size: 18px;
+  line-height: 1.2;
+  max-width: 560px;
+  text-align: center;
+  word-break: break-word;
+}
+
+/* RODAPÉ */
 .rodape {
-  margin-top: auto; /* chave para não cortar */
   text-align: center;
 }
 
@@ -153,16 +158,13 @@ body {
   font-weight: 700;
 }
 
-.segmento-label {
-  margin-top: 10px;
+.segmento-wrapper {
+  margin-top: 12px;
   font-size: 18px;
-  display: block;
 }
 
-.segmento-valor {
-  font-size: 22px;
+.segmento-wrapper span {
   font-weight: 700;
-  display: block;
 }
 
 </style>
@@ -176,12 +178,14 @@ body {
     <img src="{{SELO}}" />
   </div>
 
-  <div class="logo">
-    <img src="{{LOGO}}" />
-  </div>
+  <div class="topo">
+    <div class="logo">
+      <img src="{{LOGO}}" />
+    </div>
 
-  <div class="tarja">
-    QUEDA DE PREÇO
+    <div class="tarja">
+      QUEDA DE PREÇO
+    </div>
   </div>
 
   <div class="area-central">
@@ -204,16 +208,42 @@ body {
       {{COMPLEMENTO}}
     </div>
 
+    <div class="legal">
+      {{LEGAL}}
+    </div>
+
   </div>
 
   <div class="rodape">
     <div class="uf">{{UF}}</div>
     <div class="urn">{{URN}}</div>
-    <span class="segmento-label">SEGMENTO DE CLIENTES:</span>
-    <span class="segmento-valor">{{SEGMENTO}}</span>
+
+    <div id="segmento-wrapper" class="segmento-wrapper">
+      SEGMENTO DE CLIENTES: <span id="segmento-data">{{SEGMENTO}}</span>
+    </div>
   </div>
 
 </div>
+
+<script>
+(function () {
+  try {
+    const segmentoData = document.getElementById("segmento-data");
+    const segmentoWrapper = document.getElementById("segmento-wrapper");
+
+    if (segmentoData && segmentoWrapper) {
+      const valor = segmentoData.textContent.trim();
+      if (valor === "" || valor === "{{SEGMENTO}}") {
+        segmentoWrapper.style.visibility = "hidden";
+      } else {
+        segmentoWrapper.style.visibility = "visible";
+      }
+    }
+  } catch (e) {
+    console.log("Erro no script:", e);
+  }
+})();
+</script>
 
 </body>
 </html>
