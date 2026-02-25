@@ -12,13 +12,11 @@
   src: url('../fonts/Inter-Regular.ttf') format('truetype');
   font-weight: 400;
 }
-
 @font-face {
   font-family: 'Inter';
   src: url('../fonts/Inter-Bold.ttf') format('truetype');
   font-weight: 700;
 }
-
 @font-face {
   font-family: 'Inter';
   src: url('../fonts/Inter-Black.ttf') format('truetype');
@@ -29,63 +27,65 @@
   text-transform: uppercase;
   color: #2b4474;
   box-sizing: border-box;
+  font-family: 'Inter', sans-serif;
 }
 
 body {
   margin: 0;
   width: 700px;
   height: 1058px;
-  font-family: 'Inter', sans-serif;
   background: transparent;
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
-/* CARD */
+/* ================= CARD ================= */
 .card {
   width: 700px;
   height: 1058px;
   border: 8px solid #e0b84b;
   border-radius: 40px;
-  padding: 80px 40px 60px 40px;
+  padding: 70px 40px 50px 40px;
   position: relative;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  justify-content: space-between;
   background: #ffffff;
 }
 
-/* SELO */
+/* ===== SELO PADRÃO ===== */
 .selo {
   position: absolute;
   top: 0;
   left: 0;
-  width: 100px;
-  height: 100px;
+  width: 130px;
+  height: 65px;
+  z-index: 10;
 }
-
 .selo img {
   width: 100%;
   height: 100%;
   object-fit: contain;
 }
 
-/* LOGO */
-.logo {
-  text-align: center;
-  margin-bottom: 40px;
+/* ===== TOPO ===== */
+.topo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
+.logo {
+  margin-bottom: 25px;
+}
 .logo img {
   max-width: 220px;
   max-height: 120px;
 }
 
-/* TARJA */
 .tarja {
-  margin-top: 35px;
   background: #ff7a00;
   color: #ffffff;
   padding: 20px 70px;
@@ -96,70 +96,65 @@ body {
   white-space: nowrap;
 }
 
-.tarja span {
-  color: #ffffff;
-  font-weight: 700;
-  font-size: 54px;
+/* ===== BLOCO CENTRAL ===== */
+.bloco-central {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0; /* removido para controle manual */
 }
 
-/* TEXTO SUPERIOR */
 .texto-topo {
   text-align: center;
   font-size: 28px;
-  font-weight: 400;
-  margin-top: 50px;
-  margin-bottom: 70px;
   max-width: 550px;
   line-height: 1.15;
   word-break: break-word;
+  margin-bottom: 30px;
 }
 
-/* VALOR */
 .valor-container {
   width: 100%;
-  height: 420px;
+  height: 360px;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  margin-bottom: 0;
 }
 
 .valor-texto {
   font-weight: 900;
-  font-size: 480px; /* atualizado */
+  font-size: 480px;
   line-height: 1;
   text-align: center;
   white-space: nowrap;
 }
 
-/* CONTEÚDO INFERIOR */
-.conteudo-inferior {
-  width: 100%;
+/* ===== BLOCO INFERIOR ===== */
+.bloco-inferior {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-top: 40px;
+  gap: 16px;
 }
 
-/* COMPLEMENTO */
+/* >>> ESPAÇO EXATO DE 50PX <<< */
 .complemento {
   text-align: center;
-  font-weight: 400;
   font-size: 28px;
   max-width: 550px;
   line-height: 1.15;
   word-break: break-word;
-  margin-bottom: 25px;
+  margin-top: 50px; /* distância exata do valor */
 }
 
-/* LEGAL */
 .legal {
   text-align: center;
   font-size: 18px;
   max-width: 550px;
   line-height: 1.15;
   word-break: break-word;
-  margin-bottom: 30px;
 }
 
 /* RODAPÉ */
@@ -172,20 +167,13 @@ body {
   font-weight: 700;
 }
 
-.segmento-container {
-  margin-top: 15px;
-}
-
-.segmento-label {
-  margin-top: 12px;
+.segmento-wrapper {
+  margin-top: 10px;
   font-size: 18px;
-  display: block;
 }
 
-.segmento-valor {
-  font-size: 25px;
+.segmento-wrapper span {
   font-weight: 700;
-  display: block;
 }
 
 </style>
@@ -199,25 +187,35 @@ body {
     <img src="{{SELO}}" />
   </div>
 
-  <div class="logo">
-    <img src="{{LOGO}}" />
-  </div>
+  <!-- TOPO -->
+  <div class="topo">
+    <div class="logo">
+      <img src="{{LOGO}}" />
+    </div>
 
-  <div class="tarja">
-    <span>PROMOÇÃO</span>
-  </div>
-
-  <div class="texto-topo">
-    {{TEXTO}}
-  </div>
-
-  <div class="valor-container" id="valor-container">
-    <div class="valor-texto" id="valor-texto">
-      {{VALOR}}
+    <div class="tarja">
+      PROMOÇÃO
     </div>
   </div>
 
-  <div class="conteudo-inferior">
+  <!-- CENTRO -->
+  <div class="bloco-central">
+
+    <div class="texto-topo">
+      {{TEXTO}}
+    </div>
+
+    <div class="valor-container" id="valor-container">
+      <div class="valor-texto" id="valor-texto">
+        {{VALOR}}
+      </div>
+    </div>
+
+  </div>
+
+  <!-- INFERIOR -->
+  <div class="bloco-inferior">
+
     <div class="complemento">
       {{COMPLEMENTO}}
     </div>
@@ -229,11 +227,12 @@ body {
     <div class="rodape">
       <div class="uf">{{UF}}</div>
       <div class="urn">{{URN}}</div>
-      <div class="segmento-container">
-        <span class="segmento-label">SEGMENTO DE CLIENTES:</span>
-        <span class="segmento-valor">{{SEGMENTO}}</span>
+
+      <div id="segmento-wrapper" class="segmento-wrapper">
+        SEGMENTO DE CLIENTES: <span id="segmento-data">{{SEGMENTO}}</span>
       </div>
     </div>
+
   </div>
 
 </div>
@@ -246,12 +245,22 @@ window.addEventListener("load", function () {
 
   if (!container || !texto) return;
 
-  let fontSize = 480; // atualizado
+  let fontSize = 480;
   texto.style.fontSize = fontSize + "px";
 
   while (texto.scrollWidth > container.clientWidth && fontSize > 80) {
     fontSize -= 6;
     texto.style.fontSize = fontSize + "px";
+  }
+
+  const segmentoData = document.getElementById("segmento-data");
+  const segmentoWrapper = document.getElementById("segmento-wrapper");
+
+  if (segmentoData && segmentoWrapper) {
+    const valor = segmentoData.textContent.trim();
+    if (valor === "" || valor === "{{SEGMENTO}}") {
+      segmentoWrapper.style.visibility = "hidden";
+    }
   }
 
 });
