@@ -48,6 +48,16 @@ export class CardGenerator extends EventEmitter {
     return "";
   }
 
+  private sanitizeFileName(value: string): string {
+    return value
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^\w\s-]/g, "")
+      .replace(/\s+/g, "-")
+      .toLowerCase()
+      .trim();
+  }
+
   imageToBase64(imagePath: string): string {
     if (!imagePath || !fs.existsSync(imagePath)) return "";
     const ext = path.extname(imagePath).replace(".", "");
@@ -58,7 +68,6 @@ export class CardGenerator extends EventEmitter {
   async generateCards(excelFilePath: string): Promise<string> {
     if (!this.browser) throw new Error("Browser not initialized");
 
-    // Limpa PDFs e ZIP antigos
     fs.readdirSync(OUTPUT_DIR).forEach((file) => {
       if (file.endsWith(".pdf") || file.endsWith(".zip")) {
         fs.unlinkSync(path.join(OUTPUT_DIR, file));
@@ -81,13 +90,11 @@ export class CardGenerator extends EventEmitter {
 
       let html = fs.readFileSync(templatePath, "utf8");
 
-      // === REGRA DO VALOR (mantida da versão anterior) ===
       let valorFinal = String(row.valor ?? "");
       if (tipo !== "promocao") {
         valorFinal = valorFinal.replace(/%/g, "").trim();
       }
 
-      // === LOGO COM FALLBACK AUTOMÁTICO ===
       let logoFile = "blank.png";
 
       if (row.logo && String(row.logo).trim() !== "") {
@@ -143,7 +150,14 @@ export class CardGenerator extends EventEmitter {
           ? String(row.ordem).trim()
           : String(processed + 1);
 
-      const pdfName = `${ordemFinal}_${tipo}.pdf`;
+      const categoriaRaw =
+        row.categoria && String(row.categoria).trim() !== ""
+          ? String(row.categoria).trim()
+          : "sem-categoria";
+
+      const categoria = this.sanitizeFileName(categoriaRaw);
+
+      const pdfName = `${ordemFinal}_${tipo}_${categoria}.pdf`;
       const pdfPath = path.join(OUTPUT_DIR, pdfName);
 
       await page.pdf({
@@ -164,7 +178,6 @@ export class CardGenerator extends EventEmitter {
       });
     }
 
-    // === ZIP COM NOME IGUAL AO DA PLANILHA ===
     const baseName = path.parse(excelFilePath).name;
     const zipPath = path.join(OUTPUT_DIR, `${baseName}.zip`);
 
