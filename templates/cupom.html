@@ -51,6 +51,13 @@ body {
   color: #1F3C6E;
 }
 
+.selo-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 10;
+}
+
 /* ===== SELO CORRIGIDO DEFINITIVO ===== */
 .selo {
   position: absolute;
@@ -221,8 +228,8 @@ body {
 <body>
 <div class="card">
 
-  <div class="selo">
-    <img src="{{SELO}}" alt="Selo">
+  <div class="selo-container">
+    <img src="{{SELO}}">
   </div>
 
   <div class="logo">
