@@ -170,8 +170,14 @@ export class CardGenerator extends EventEmitter {
         width: "700px",
         height: "1058px",
         printBackground: true,
+        margin: {
+          top: "0px",
+          right: "0px",
+          bottom: "0px",
+          left: "0px"
+        }
       });
-
+      
       await page.close();
 
       processed++;
