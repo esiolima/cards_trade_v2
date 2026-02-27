@@ -161,7 +161,7 @@ body {
   text-align: center;
 }
 
-.uf, .urn {
+.uf {
   font-size: clamp(20px, 2vw, 24px);
   font-weight: 700;
 }
@@ -222,10 +222,10 @@ body {
 
     <div class="rodape">
       <div class="uf">{{UF}}</div>
-      <div class="urn">{{URN}}</div>
+      <div class="uf">{{URN}}</div>
 
-      <div class="segmento-wrapper">
-        {{SEGMENTO}}
+      <div class="segmento-wrapper" id="segmento-bloco">
+        SEGMENTO DE CLIENTES: {{SEGMENTO}}
       </div>
     </div>
 
@@ -239,14 +239,25 @@ window.addEventListener("load", function () {
   const container = document.getElementById("valor-container");
   const texto = document.getElementById("valor-texto");
 
-  if (!container || !texto) return;
-
-  let fontSize = 480;
-  texto.style.fontSize = fontSize + "px";
-
-  while (texto.scrollWidth > container.clientWidth && fontSize > 80) {
-    fontSize -= 6;
+  if (container && texto) {
+    let fontSize = 480;
     texto.style.fontSize = fontSize + "px";
+
+    while (texto.scrollWidth > container.clientWidth && fontSize > 80) {
+      fontSize -= 6;
+      texto.style.fontSize = fontSize + "px";
+    }
+  }
+
+  const segmento = document.getElementById("segmento-bloco");
+  if (segmento) {
+    const valor = segmento.innerText
+      .replace("SEGMENTO DE CLIENTES:", "")
+      .trim();
+
+    if (!valor) {
+      segmento.style.display = "none";
+    }
   }
 
 });
