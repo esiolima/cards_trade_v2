@@ -123,12 +123,17 @@ export class CardGenerator extends EventEmitter {
           )
         : "";
 
+      const segmentoRaw =
+        row.segmento && String(row.segmento).trim() !== ""
+        ? `SEGMENTO DE CLIENTES: ${String(row.segmento).trim()}`
+        : "";
+
       html = html
         .replaceAll("{{TEXTO}}", String(row.texto ?? ""))
         .replaceAll("{{VALOR}}", valorFinal)
         .replaceAll("{{COMPLEMENTO}}", String(row.complemento ?? ""))
         .replaceAll("{{LEGAL}}", String(row.legal ?? ""))
-        .replaceAll("{{SEGMENTO}}", String(row.segmento ?? ""))
+        .replaceAll("{{SEGMENTO}}", segmentoRaw)
         .replaceAll("{{CUPOM}}", String(row.cupom ?? ""))
         .replaceAll("{{UF}}", row.uf ? `UF: ${row.uf}` : "")
         .replaceAll("{{URN}}", row.urn ? `URN: ${row.urn}` : "")
