@@ -85,7 +85,7 @@ body {
 /* ===== TEXTO SUPERIOR ===== */
 .condicao {
   margin-top: 35px;
-  margin-bottom: 60px; /* MAIS ESPAÇO ANTES DO VALOR */
+  margin-bottom: 60px;
   max-width: 550px;
   font-size: 28px;
   font-weight: 400;
@@ -99,7 +99,7 @@ body {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  margin-top: 0; /* removido margin negativo */
+  margin-top: 0;
   width: 100%;
   padding: 0 30px;
   margin-bottom: 10px;
@@ -122,7 +122,7 @@ body {
   font-weight: 700;
 }
 
-/* ===== COMPLEMENTO LOGO APÓS DESCONTO ===== */
+/* ===== COMPLEMENTO ===== */
 .complemento {
   margin-top: 20px;
   max-width: 550px;
@@ -176,7 +176,6 @@ body {
   color: #ffffff;
 }
 
-/* ===== CUPOM DINÂMICO ===== */
 .cupom-codigo {
   display: flex;
   align-items: center;
@@ -208,15 +207,14 @@ body {
   font-weight: 700;
 }
 
-.segmento-label {
-  margin-top: 12px;
-  font-size: clamp(18px, 1.5vw, 18px);
-}
+/* URN agora usa mesma classe do UF */
 
 .segmento-valor {
+  margin-top: 12px;
   font-size: clamp(20px, 2vw, 25px);
-  font-weight: 400;
+  font-weight: 400; /* Regular */
 }
+
 </style>
 </head>
 
@@ -256,7 +254,7 @@ body {
 
   <div class="rodape">
     <div class="uf">{{UF}}</div>
-    <div class="urn">{{URN}}</div>
+    <div class="uf">{{URN}}</div> <!-- PADRONIZADO -->
     <div class="segmento-valor">{{SEGMENTO}}</div>
   </div>
 
