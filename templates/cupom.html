@@ -46,17 +46,17 @@ body {
   flex-direction: column;
   align-items: center;
   padding: 0 20px;
-  overflow: hidden;
+  /* overflow removido */
   position: relative;
   color: #1F3C6E;
 }
 
-/* ===== SELO AJUSTADO PROPORCIONAL ===== */
+/* ===== SELO CORRIGIDO ===== */
 .selo {
   position: absolute;
-  top: -6px;   /* compensa a borda */
-  left: -6px;  /* compensa a borda */
-  width: 372px;
+  top: 0;
+  left: 0;
+  width: 372px;   /* proporcional 840x407 */
   height: 180px;
   margin: 0;
   padding: 0;
@@ -260,39 +260,5 @@ body {
   </div>
 
 </div>
-
-<script>
-(function () {
-  try {
-    const el = document.getElementById("cupom-text");
-    if (!el) return;
-
-    const container = el.parentElement;
-    if (!container) return;
-
-    const style = window.getComputedStyle(container);
-    const paddingLeft = parseFloat(style.paddingLeft);
-    const paddingRight = parseFloat(style.paddingRight);
-
-    const larguraDisponivel =
-      container.clientWidth - paddingLeft - paddingRight;
-
-    let fontSize = 110;
-    const minFontSize = 20;
-
-    el.style.whiteSpace = "nowrap";
-    el.style.fontSize = fontSize + "px";
-
-    while (el.scrollWidth > larguraDisponivel && fontSize > minFontSize) {
-      fontSize--;
-      el.style.fontSize = fontSize + "px";
-    }
-
-  } catch (e) {
-    console.log("Erro ajuste cupom:", e);
-  }
-})();
-</script>
-
 </body>
 </html>
