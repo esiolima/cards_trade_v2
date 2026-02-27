@@ -96,15 +96,14 @@ body {
   white-space: nowrap;
 }
 
-/* BLOCO CENTRAL MAIS COMPACTO */
+/* BLOCO CENTRAL */
 .area-central {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 25px; /* controla espaçamento vertical */
+  gap: 25px;
 }
 
-/* TEXTO REDUZIDO */
 .texto-topo {
   font-size: 26px;
   line-height: 1.2;
@@ -113,7 +112,6 @@ body {
   word-break: break-word;
 }
 
-/* VALOR */
 .valor-container {
   display: flex;
   justify-content: center;
@@ -161,9 +159,6 @@ body {
 .segmento-wrapper {
   margin-top: 12px;
   font-size: 18px;
-}
-
-.segmento-wrapper span {
   font-weight: 700;
 }
 
@@ -218,32 +213,12 @@ body {
     <div class="uf">{{UF}}</div>
     <div class="urn">{{URN}}</div>
 
-    <div id="segmento-wrapper" class="segmento-wrapper">
-      SEGMENTO DE CLIENTES: <span id="segmento-data">{{SEGMENTO}}</span>
+    <div class="segmento-wrapper">
+      {{SEGMENTO}}
     </div>
   </div>
 
 </div>
-
-<script>
-(function () {
-  try {
-    const segmentoData = document.getElementById("segmento-data");
-    const segmentoWrapper = document.getElementById("segmento-wrapper");
-
-    if (segmentoData && segmentoWrapper) {
-      const valor = segmentoData.textContent.trim();
-      if (valor === "" || valor === "{{SEGMENTO}}") {
-        segmentoWrapper.style.visibility = "hidden";
-      } else {
-        segmentoWrapper.style.visibility = "visible";
-      }
-    }
-  } catch (e) {
-    console.log("Erro no script:", e);
-  }
-})();
-</script>
 
 </body>
 </html>
