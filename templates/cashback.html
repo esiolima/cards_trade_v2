@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=700, initial-scale=1.0" />
-<title>Queda de Preço</title>
+<title>Cashback</title>
 
 <style>
 
@@ -85,7 +85,7 @@ body {
 }
 
 .tarja {
-  background: #c905cb;
+  background: #003e87;
   color: #ffffff;
   font-weight: 700;
   font-size: 42px;
@@ -151,7 +151,7 @@ body {
   text-align: center;
 }
 
-.uf, .urn {
+.uf {
   font-size: 22px;
   font-weight: 700;
 }
@@ -179,7 +179,7 @@ body {
     </div>
 
     <div class="tarja">
-      CASHBACK
+      BC
     </div>
   </div>
 
@@ -196,7 +196,7 @@ body {
     </div>
 
     <div class="desconto">
-      DE CASHBACK
+      DE DESCONTO
     </div>
 
     <div class="complemento">
@@ -211,14 +211,33 @@ body {
 
   <div class="rodape">
     <div class="uf">{{UF}}</div>
-    <div class="urn">{{URN}}</div>
+    <div class="uf">{{URN}}</div>
 
-    <div class="segmento-wrapper">
-      {{SEGMENTO}}
+    <div class="segmento-wrapper" id="segmento-bloco">
+      SEGMENTO DE CLIENTES: {{SEGMENTO}}
     </div>
   </div>
 
 </div>
+
+<script>
+(function () {
+  try {
+    const segmento = document.getElementById("segmento-bloco");
+    if (segmento) {
+      const valor = segmento.innerText
+        .replace("SEGMENTO DE CLIENTES:", "")
+        .trim();
+
+      if (!valor) {
+        segmento.style.display = "none";
+      }
+    }
+  } catch (e) {
+    console.log("Erro segmento:", e);
+  }
+})();
+</script>
 
 </body>
 </html>
