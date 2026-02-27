@@ -46,21 +46,21 @@ body {
   flex-direction: column;
   align-items: center;
   padding: 0 20px;
-  /* overflow removido */
+  overflow: visible; /* IMPORTANTE */
   position: relative;
   color: #1F3C6E;
 }
 
-/* ===== SELO CORRIGIDO ===== */
+/* ===== SELO CORRIGIDO DEFINITIVO ===== */
 .selo {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 372px;   /* proporcional 840x407 */
+  top: -6px;   /* compensa borda */
+  left: -6px;  /* compensa borda */
+  width: 372px;   /* proporcional a 840x407 */
   height: 180px;
   margin: 0;
   padding: 0;
-  z-index: 20;
+  z-index: 50;
 }
 
 .selo img {
@@ -102,7 +102,6 @@ body {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  margin-top: 0;
   width: 100%;
   padding: 0 30px;
   margin-bottom: 10px;
