@@ -45,25 +45,28 @@ body {
   flex-direction: column;
   align-items: center;
   padding: 0 20px;
-  overflow: hidden;
+  overflow: visible; /* permite ultrapassar moldura */
   position: relative;
   color: #1F3C6E;
 }
 
-/* ===== SELO ===== */
+/* ===== SELO DINÂMICO ===== */
 .selo {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100px;
-  height: 100px;
-  z-index: 10;
+  top: -6px;
+  left: -6px;
+  width: 130px;
+  height: 65px;
+  background: transparent;
+  display: none;
+  z-index: 999;
 }
 
 .selo img {
   width: 100%;
   height: 100%;
   object-fit: contain;
+  display: block;
 }
 
 /* ===== LOGO ===== */
@@ -216,8 +219,9 @@ body {
 <body>
 <div class="card">
 
-  <div class="selo">
-    <img src="{{SELO}}" alt="Selo">
+  <!-- SELO DINÂMICO -->
+  <div class="selo" id="selo-container">
+    <img id="selo-img" alt="Selo">
   </div>
 
   <div class="logo">
@@ -261,6 +265,7 @@ body {
 (function () {
   try {
 
+    /* ===== AJUSTE AUTOMÁTICO CUPOM ===== */
     const el = document.getElementById("cupom-text");
     if (el) {
       const container = el.parentElement;
@@ -282,16 +287,21 @@ body {
       }
     }
 
-    // SEGMENTO: mostra somente se tiver valor real
+    /* ===== SEGMENTO ===== */
     const segmento = document.getElementById("segmento-bloco");
-    if (segmento) {
-      const valor = segmento.innerText
-        .replace("SEGMENTO DE CLIENTES:", "")
-        .trim();
+    const valorSegmento = "{{SEGMENTO}}".trim();
+    if (!valorSegmento && segmento) {
+      segmento.style.display = "none";
+    }
 
-      if (!valor) {
-        segmento.style.display = "none";
-      }
+    /* ===== SELO ===== */
+    const seloContainer = document.getElementById("selo-container");
+    const seloImg = document.getElementById("selo-img");
+    const valorSelo = "{{SELO}}".trim();
+
+    if (valorSelo) {
+      seloImg.src = valorSelo;
+      seloContainer.style.display = "block";
     }
 
   } catch (e) {
