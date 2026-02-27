@@ -101,7 +101,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0; /* removido para controle manual */
+  gap: 0;
 }
 
 .texto-topo {
@@ -139,14 +139,13 @@ body {
   gap: 16px;
 }
 
-/* >>> ESPAÇO EXATO DE 50PX <<< */
 .complemento {
   text-align: center;
   font-size: 28px;
   max-width: 550px;
   line-height: 1.15;
   word-break: break-word;
-  margin-top: 50px; /* distância exata do valor */
+  margin-top: 50px;
 }
 
 .legal {
@@ -170,9 +169,6 @@ body {
 .segmento-wrapper {
   margin-top: 10px;
   font-size: 18px;
-}
-
-.segmento-wrapper span {
   font-weight: 700;
 }
 
@@ -228,8 +224,8 @@ body {
       <div class="uf">{{UF}}</div>
       <div class="urn">{{URN}}</div>
 
-      <div id="segmento-wrapper" class="segmento-wrapper">
-        SEGMENTO DE CLIENTES: <span id="segmento-data">{{SEGMENTO}}</span>
+      <div class="segmento-wrapper">
+        {{SEGMENTO}}
       </div>
     </div>
 
@@ -251,16 +247,6 @@ window.addEventListener("load", function () {
   while (texto.scrollWidth > container.clientWidth && fontSize > 80) {
     fontSize -= 6;
     texto.style.fontSize = fontSize + "px";
-  }
-
-  const segmentoData = document.getElementById("segmento-data");
-  const segmentoWrapper = document.getElementById("segmento-wrapper");
-
-  if (segmentoData && segmentoWrapper) {
-    const valor = segmentoData.textContent.trim();
-    if (valor === "" || valor === "{{SEGMENTO}}") {
-      segmentoWrapper.style.visibility = "hidden";
-    }
   }
 
 });
