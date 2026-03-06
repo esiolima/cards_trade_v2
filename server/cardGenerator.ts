@@ -127,7 +127,7 @@ export class CardGenerator extends EventEmitter {
         row.segmento && String(row.segmento).trim() !== ""
           ? String(row.segmento).trim()
           : "";
-      
+
       html = html
         .replaceAll("{{TEXTO}}", String(row.texto ?? ""))
         .replaceAll("{{VALOR}}", valorFinal)
@@ -135,8 +135,8 @@ export class CardGenerator extends EventEmitter {
         .replaceAll("{{LEGAL}}", String(row.legal ?? ""))
         .replaceAll("{{SEGMENTO}}", segmentoRaw)
         .replaceAll("{{CUPOM}}", String(row.cupom ?? ""))
-        .replaceAll("{{UF}}", row.uf ? `UF: ${row.uf}` : "")
-        .replaceAll("{{URN}}", row.urn ? `URN: ${row.urn}` : "")
+        .replaceAll("{{UF}}", row.urn ? `UF: ${row.urn}` : "")
+        .replaceAll("{{URN}}", row.uf ? `URN: ${row.uf}` : "")
         .replaceAll("{{LOGO}}", logoBase64)
         .replaceAll("{{SELO}}", seloBase64);
 
@@ -177,7 +177,7 @@ export class CardGenerator extends EventEmitter {
           left: "0px"
         }
       });
-      
+
       await page.close();
 
       processed++;
