@@ -46,7 +46,8 @@ export const cardRouter = router({
           ctx.io?.to(sessionId).emit("progress", progress);
         });
 
-        const zipPath = await generator.generateCards(filePath);
+        const originalFileName = path.basename(filePath);
+        const zipPath = await generator.generateCards(filePath, originalFileName);
 
         // Cleanup
         await generator.close();
