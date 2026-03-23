@@ -22,6 +22,7 @@ export default function CardGenerator() {
   const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   const [isDark, setIsDark] = useState(true);
   const [isDragging, setIsDragging] = useState(false);
+  const [originalFileName, setOriginalFileName] = useState<string | null>(null);
   const socketRef = useRef<Socket | null>(null);
   const [, setLocation] = useLocation();
 
@@ -44,6 +45,7 @@ export default function CardGenerator() {
     setError(null);
     setZipPath(null);
     setProgress(null);
+    setOriginalFileName(null);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -70,8 +72,9 @@ export default function CardGenerator() {
       formData.append("file", file);
       const uploadResponse = await fetch("/api/upload", { method: "POST", body: formData });
       if (!uploadResponse.ok) throw new Error("Erro ao fazer upload do arquivo");
-      const { filePath } = await uploadResponse.json();
-      const result = await generateCardsMutation.mutateAsync({ filePath, sessionId });
+      const { filePath, fileName } = await uploadResponse.json();
+      setOriginalFileName(fileName);
+      const result = await generateCardsMutation.mutateAsync({ filePath, sessionId, originalFileName: fileName });
       if (result.success) setZipPath(result.zipPath);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao processar arquivo");
@@ -89,7 +92,9 @@ export default function CardGenerator() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = zipPath ? zipPath.split("/").pop() || "cards.zip" : "cards.zip";
+      a.download = originalFileName
+        ? originalFileName.replace(".xlsx", ".zip")
+        : zipPath?.split("/").pop() || "cards.zip";
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -128,7 +133,6 @@ export default function CardGenerator() {
           <div className="lg:col-span-2">
             <div className={`${cardBg} rounded-2xl p-8 shadow-2xl transition-all duration-300`}>
               
-              {/* Seção de Upload (Estado Inicial) */}
               {!isProcessing && !zipPath && (
                 <div className="space-y-6">
                   <div>
@@ -172,7 +176,6 @@ export default function CardGenerator() {
                 </div>
               )}
 
-              {/* Seção de Processamento */}
               {isProcessing && progress && (
                 <div className="space-y-8">
                   <div className="text-center">
@@ -192,7 +195,6 @@ export default function CardGenerator() {
                 </div>
               )}
 
-              {/* Seção de Sucesso */}
               {!isProcessing && zipPath && (
                 <div className="space-y-6">
                   <div className="text-center">
@@ -202,7 +204,7 @@ export default function CardGenerator() {
                   </div>
                   <div className={`${isDark ? 'bg-green-500/20 border-green-400/50' : 'bg-green-500/10 border-green-500/20'} rounded-lg p-6 border`}><div className="flex items-center justify-between"><span className={`font-medium ${isDark ? 'text-green-200' : 'text-green-800'}`}>Cards Gerados</span><span className={`text-3xl font-bold ${isDark ? 'text-green-300' : 'text-green-600'}`}>{progress?.total}</span></div></div>
                   <Button onClick={handleDownload} className="w-full bg-green-600 hover:bg-green-500 text-white py-6 text-lg font-semibold rounded-lg transition-all duration-300 flex items-center justify-center space-x-2"><Download className="w-5 h-5" /><span>Baixar Cards (ZIP)</span></Button>
-                  <Button onClick={() => { setFile(null); setZipPath(null); setProgress(null); setError(null); }} className={`w-full py-6 text-lg font-semibold transition-all duration-300 ${isDark ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-black/5 hover:bg-black/10 text-slate-800'}`}>Processar Outro Arquivo</Button>
+                  <Button onClick={() => { setFile(null); setZipPath(null); setProgress(null); setError(null); setOriginalFileName(null); }} className={`w-full py-6 text-lg font-semibold transition-all duration-300 ${isDark ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-black/5 hover:bg-black/10 text-slate-800'}`}>Processar Outro Arquivo</Button>
                 </div>
               )}
             </div>
@@ -227,7 +229,6 @@ export default function CardGenerator() {
           </div>
         </div>
 
-        {/* Rodapé Restaurado */}
         <div className={`mt-16 pt-8 border-t ${borderColor} text-center`}>
           <p className={`text-sm ${textSecondary}`}>
             Desenvolvido por Esio Lima - Versão 2.2
