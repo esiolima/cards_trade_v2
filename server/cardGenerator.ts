@@ -78,7 +78,12 @@ export class CardGenerator extends EventEmitter {
 
   private getDateStamp(): string {
     const now = new Date();
-    return now.toISOString().split("T")[0]; // YYYY-MM-DD
+    const dd = String(now.getDate()).padStart(2, "0");
+    const mm = String(now.getMonth() + 1).padStart(2, "0");
+    const aa = String(now.getFullYear()).slice(-2);
+    const hh = String(now.getHours()).padStart(2, "0");
+    const ss = String(now.getSeconds()).padStart(2, "0");
+    return `${dd}-${mm}-${aa}-${hh}-${ss}`;
   }
 
   imageToBase64(imagePath: string): string {
