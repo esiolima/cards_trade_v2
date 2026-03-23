@@ -5,7 +5,6 @@ import path from "path";
 import fs from "fs";
 import { TRPCError } from "@trpc/server";
 
-// Store active generators by session
 const activeGenerators = new Map<string, CardGenerator>();
 
 export const cardRouter = router({
@@ -14,19 +13,18 @@ export const cardRouter = router({
       z.object({
         filePath: z.string(),
         sessionId: z.string(),
+        originalFileName: z.string().optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const { filePath, sessionId } = input;
+      const { filePath, sessionId, originalFileName } = input;
 
-      // Validate file exists and is xlsx
       if (!fs.existsSync(filePath)) {
         throw new TRPCError({
           code: "BAD_REQUEST",
           message: "Arquivo não encontrado",
         });
       }
-
       if (!filePath.endsWith(".xlsx")) {
         throw new TRPCError({
           code: "BAD_REQUEST",
@@ -37,19 +35,14 @@ export const cardRouter = router({
       try {
         const generator = new CardGenerator();
         activeGenerators.set(sessionId, generator);
-
         await generator.initialize();
 
-        // Setup progress listener to emit via socket
         generator.on("progress", (progress) => {
-          // Emit progress via socket (will be handled in index.ts)
           ctx.io?.to(sessionId).emit("progress", progress);
         });
 
-        const originalFileName = path.basename(filePath);
         const zipPath = await generator.generateCards(filePath, originalFileName);
 
-        // Cleanup
         await generator.close();
         activeGenerators.delete(sessionId);
 
@@ -77,7 +70,6 @@ export const cardRouter = router({
     .query(async ({ input }) => {
       const { zipPath } = input;
 
-      // Security: ensure path is within output directory
       const outputDir = path.resolve("output");
       const resolvedPath = path.resolve(zipPath);
 
