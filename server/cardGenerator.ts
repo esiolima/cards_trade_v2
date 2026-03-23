@@ -58,6 +58,29 @@ export class CardGenerator extends EventEmitter {
       .trim();
   }
 
+  private getUniqueFilePath(filePath: string): string {
+    if (!fs.existsSync(filePath)) return filePath;
+
+    const ext = path.extname(filePath);
+    const name = path.basename(filePath, ext);
+    const dir = path.dirname(filePath);
+
+    let counter = 2;
+    let newPath = "";
+
+    do {
+      newPath = path.join(dir, `${name}_v${counter}${ext}`);
+      counter++;
+    } while (fs.existsSync(newPath));
+
+    return newPath;
+  }
+
+  private getDateStamp(): string {
+    const now = new Date();
+    return now.toISOString().split("T")[0]; // YYYY-MM-DD
+  }
+
   imageToBase64(imagePath: string): string {
     if (!imagePath || !fs.existsSync(imagePath)) return "";
     const ext = path.extname(imagePath).replace(".", "");
@@ -65,7 +88,10 @@ export class CardGenerator extends EventEmitter {
     return `data:image/${ext};base64,${buffer.toString("base64")}`;
   }
 
-  async generateCards(excelFilePath: string): Promise<string> {
+  async generateCards(
+    excelFilePath: string,
+    originalFileName?: string
+  ): Promise<string> {
     if (!this.browser) throw new Error("Browser not initialized");
 
     fs.readdirSync(OUTPUT_DIR).forEach((file) => {
@@ -127,7 +153,7 @@ export class CardGenerator extends EventEmitter {
         row.segmento && String(row.segmento).trim() !== ""
           ? String(row.segmento).trim()
           : "";
-      
+
       html = html
         .replaceAll("{{TEXTO}}", String(row.texto ?? ""))
         .replaceAll("{{VALOR}}", valorFinal)
@@ -174,10 +200,10 @@ export class CardGenerator extends EventEmitter {
           top: "0px",
           right: "0px",
           bottom: "0px",
-          left: "0px"
-        }
+          left: "0px",
+        },
       });
-      
+
       await page.close();
 
       processed++;
@@ -189,8 +215,16 @@ export class CardGenerator extends EventEmitter {
       });
     }
 
-    const baseName = path.parse(excelFilePath).name;
-    const zipPath = path.join(OUTPUT_DIR, `${baseName}.zip`);
+    // 🔥 NOME DO ZIP MELHORADO
+    const baseName = originalFileName
+      ? path.parse(originalFileName).name
+      : path.parse(excelFilePath).name;
+
+    const date = this.getDateStamp();
+    let zipName = `${baseName}_${date}.zip`;
+
+    let zipPath = path.join(OUTPUT_DIR, zipName);
+    zipPath = this.getUniqueFilePath(zipPath);
 
     const output = fs.createWriteStream(zipPath);
     const archive = archiver("zip", { zlib: { level: 9 } });
