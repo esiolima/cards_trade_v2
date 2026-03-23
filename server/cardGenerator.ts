@@ -82,8 +82,9 @@ export class CardGenerator extends EventEmitter {
     const mm = String(now.getMonth() + 1).padStart(2, "0");
     const aa = String(now.getFullYear()).slice(-2);
     const hh = String(now.getHours()).padStart(2, "0");
+    const min = String(now.getMinutes()).padStart(2, "0");
     const ss = String(now.getSeconds()).padStart(2, "0");
-    return `${dd}-${mm}-${aa}-${hh}-${ss}`;
+    return `${dd}_${mm}_${aa}-${hh}_${min}_${ss}`;
   }
 
   imageToBase64(imagePath: string): string {
