@@ -89,7 +89,7 @@ export default function CardGenerator() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "cards.zip";
+      a.download = zipPath ? zipPath.split("/").pop() || "cards.zip" : "cards.zip";
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
