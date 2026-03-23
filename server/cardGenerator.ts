@@ -77,7 +77,7 @@ export class CardGenerator extends EventEmitter {
   }
 
   private getDateStamp(): string {
-    const now = new Date();
+    const now = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
     const dd = String(now.getDate()).padStart(2, "0");
     const mm = String(now.getMonth() + 1).padStart(2, "0");
     const aa = String(now.getFullYear()).slice(-2);
