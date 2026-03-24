@@ -17,14 +17,12 @@ export default function CardGenerator() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState<ProgressData | null>(null);
   const [zipPath, setZipPath] = useState<string | null>(null);
-  const [jornalPath, setJornalPath] = useState<string | null>(null);
+  const [uploadedFilePath, setUploadedFilePath] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [sessionId] = useState(() => `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   const [isDark, setIsDark] = useState(true);
   const [isDragging, setIsDragging] = useState(false);
   const [originalFileName, setOriginalFileName] = useState<string | null>(null);
-  const [uploadedFilePath, setUploadedFilePath] = useState<string | null>(null);
-
   const socketRef = useRef<Socket | null>(null);
   const [, setLocation] = useLocation();
 
@@ -52,7 +50,6 @@ export default function CardGenerator() {
     setFile(selectedFile);
     setError(null);
     setZipPath(null);
-    setJornalPath(null);
   };
 
   const handleUpload = async () => {
@@ -82,21 +79,23 @@ export default function CardGenerator() {
       });
 
       setZipPath(result.zipPath);
-    } catch (err) {
+    } catch {
       setError("Erro ao processar");
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const handleDownload = async (path: string, fileName: string) => {
-    const response = await fetch(`/api/download?zipPath=${encodeURIComponent(path)}`);
+  const handleDownload = async () => {
+    if (!zipPath) return;
+
+    const response = await fetch(`/api/download?zipPath=${encodeURIComponent(zipPath)}`);
     const blob = await response.blob();
 
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = fileName;
+    a.download = "cards.zip";
     a.click();
   };
 
@@ -108,9 +107,14 @@ export default function CardGenerator() {
       sessionId,
     });
 
-    setJornalPath(result.jornalPath);
+    const response = await fetch(`/api/download?zipPath=${encodeURIComponent(result.jornalPath)}`);
+    const blob = await response.blob();
 
-    handleDownload(result.jornalPath, "jornal.pdf");
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "jornal.pdf";
+    a.click();
   };
 
   return (
@@ -129,8 +133,8 @@ export default function CardGenerator() {
 
       {zipPath && (
         <>
-          <button onClick={() => handleDownload(zipPath, "cards.zip")}>
-            Baixar Cards
+          <button onClick={handleDownload}>
+            Baixar Cards (ZIP)
           </button>
 
           <br /><br />
