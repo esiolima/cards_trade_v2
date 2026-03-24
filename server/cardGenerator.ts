@@ -221,7 +221,6 @@ export class CardGenerator extends EventEmitter {
       });
     }
 
-    // 🔥 NOME DO ZIP MELHORADO
     const baseName = originalFileName
       ? path.parse(originalFileName).name
       : path.parse(excelFilePath).name;
@@ -246,6 +245,105 @@ export class CardGenerator extends EventEmitter {
     await archive.finalize();
 
     return zipPath;
+  }
+
+  // 🔥 NOVA FUNÇÃO (JORNAL)
+  async generateJornal(excelFilePath: string): Promise<string> {
+    if (!this.browser) throw new Error("Browser not initialized");
+
+    const workbook = xlsx.readFile(excelFilePath);
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const rows: any[] = xlsx.utils.sheet_to_json(sheet, { defval: "" });
+
+    let html = `
+    <html>
+      <head>
+        <style>
+          body {
+            margin: 0;
+            background: #5a2d0c;
+            font-family: Arial, sans-serif;
+          }
+
+          .container {
+            padding: 40px;
+          }
+
+          .categoria {
+            margin-top: 40px;
+          }
+
+          .tarja {
+            background: #1f7a3f;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 999px;
+            font-weight: bold;
+            text-align: center;
+            width: fit-content;
+            margin: 0 auto 24px;
+          }
+
+          .grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+          }
+
+          .card {
+            background: white;
+            border-radius: 16px;
+            height: 300px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+    `;
+
+    let currentCategoria = "";
+
+    for (const row of rows) {
+      const categoria = String(row.segmento || "OUTROS");
+
+      if (categoria !== currentCategoria) {
+        if (currentCategoria !== "") {
+          html += `</div></div>`;
+        }
+
+        html += `
+          <div class="categoria">
+            <div class="tarja">${categoria}</div>
+            <div class="grid">
+        `;
+
+        currentCategoria = categoria;
+      }
+
+      html += `<div class="card"></div>`;
+    }
+
+    html += `
+            </div>
+          </div>
+        </div>
+      </body>
+    </html>
+    `;
+
+    const filePath = path.join(OUTPUT_DIR, "jornal.pdf");
+
+    const page = await this.browser.newPage();
+    await page.setContent(html, { waitUntil: "networkidle0" });
+
+    await page.pdf({
+      path: filePath,
+      printBackground: true,
+    });
+
+    await page.close();
+
+    return filePath;
   }
 
   async close() {
