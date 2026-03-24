@@ -226,6 +226,9 @@ const handleGerarJornal = async () => {
                   </div>
                   <div className={`${isDark ? 'bg-green-500/20 border-green-400/50' : 'bg-green-500/10 border-green-500/20'} rounded-lg p-6 border`}><div className="flex items-center justify-between"><span className={`font-medium ${isDark ? 'text-green-200' : 'text-green-800'}`}>Cards Gerados</span><span className={`text-3xl font-bold ${isDark ? 'text-green-300' : 'text-green-600'}`}>{progress?.total}</span></div></div>
                   <Button onClick={handleDownload} className="w-full bg-green-600 hover:bg-green-500 text-white py-6 text-lg font-semibold rounded-lg transition-all duration-300 flex items-center justify-center space-x-2"><Download className="w-5 h-5" /><span>Baixar Cards (ZIP)</span></Button>
+                  <Button onClick={handleGerarJornal}>
+                   Gerar Jornal (PDF)
+                  </Button>
                   <Button onClick={() => { setFile(null); setZipPath(null); setProgress(null); setError(null); setOriginalFileName(null); }} className={`w-full py-6 text-lg font-semibold transition-all duration-300 ${isDark ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-black/5 hover:bg-black/10 text-slate-800'}`}>Processar Outro Arquivo</Button>
                 </div>
               )}
