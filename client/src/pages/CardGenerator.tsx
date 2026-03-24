@@ -119,7 +119,7 @@ export default function CardGenerator() {
 
   return (
     <div className="p-10 text-center">
-      <h1 className="text-2xl font-bold mb-6">Gerador de Cards</h1>
+      <h1 className="text-2xl font-bold mb-6">teste</h1>
 
       <input type="file" onChange={(e) => handleFileSelect(e.target.files?.[0])} />
 
