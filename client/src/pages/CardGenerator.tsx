@@ -4,7 +4,7 @@ import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Upload, CheckCircle2, AlertCircle, Download, Hourglass, Moon, Sun, Image } from "lucide-react";
+import { Upload, CheckCircle2, AlertCircle, Download, Hourglass, Moon, Sun, Image, FileText } from "lucide-react";
 
 interface ProgressData {
   total: number;
