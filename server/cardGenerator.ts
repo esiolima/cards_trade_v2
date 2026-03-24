@@ -320,7 +320,7 @@ export class CardGenerator extends EventEmitter {
         currentCategoria = categoria;
       }
 
-      html += `<div class="card"></div>`;
+      html += `<iframe src="file://${path.join(OUTPUT_DIR, `${row.ordem}_${this.normalizeType(row.tipo)}.pdf`)}" style="width:100%; height:300px; border:none;"></iframe>`;
     }
 
     html += `
