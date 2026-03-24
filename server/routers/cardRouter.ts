@@ -61,6 +61,49 @@ export const cardRouter = router({
       }
     }),
 
+  // 🔥 NOVO — GERAR JORNAL
+  generateJornal: publicProcedure
+    .input(
+      z.object({
+        filePath: z.string(),
+        sessionId: z.string(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const { filePath, sessionId } = input;
+
+      if (!fs.existsSync(filePath)) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Arquivo não encontrado",
+        });
+      }
+
+      try {
+        const generator = new CardGenerator();
+        activeGenerators.set(sessionId, generator);
+        await generator.initialize();
+
+        const jornalPath = await generator.generateJornal(filePath);
+
+        await generator.close();
+        activeGenerators.delete(sessionId);
+
+        return {
+          success: true,
+          jornalPath,
+          fileName: path.basename(jornalPath),
+        };
+      } catch (error) {
+        activeGenerators.delete(sessionId);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message:
+            error instanceof Error ? error.message : "Erro ao gerar jornal",
+        });
+      }
+    }),
+
   downloadZip: publicProcedure
     .input(
       z.object({
