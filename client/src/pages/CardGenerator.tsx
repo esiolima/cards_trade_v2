@@ -3,7 +3,7 @@ import { io, Socket } from "socket.io-client";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";f
+import { Progress } from "@/components/ui/progress";
 import { Upload, CheckCircle2, AlertCircle, Download, Hourglass, Moon, Sun, Image } from "lucide-react";
 
 interface ProgressData {
@@ -23,12 +23,10 @@ export default function CardGenerator() {
   const [isDark, setIsDark] = useState(true);
   const [isDragging, setIsDragging] = useState(false);
   const [originalFileName, setOriginalFileName] = useState<string | null>(null);
-  const [uploadedFilePath, setUploadedFilePath] = useState<string | null>(null);
   const socketRef = useRef<Socket | null>(null);
   const [, setLocation] = useLocation();
 
   const generateCardsMutation = trpc.card.generateCards.useMutation();
-  const generateJornalMutation = trpc.card.generateJornal.useMutation();
 
   useEffect(() => {
     const socket = io({ reconnection: true, reconnectionDelay: 1000, reconnectionDelayMax: 5000, reconnectionAttempts: 5 });
@@ -75,7 +73,6 @@ export default function CardGenerator() {
       const uploadResponse = await fetch("/api/upload", { method: "POST", body: formData });
       if (!uploadResponse.ok) throw new Error("Erro ao fazer upload do arquivo");
       const { filePath, fileName } = await uploadResponse.json();
-      setUploadedFilePath(filePath);
       setOriginalFileName(fileName);
       const result = await generateCardsMutation.mutateAsync({ filePath, sessionId, originalFileName: fileName });
       if (result.success) setZipPath(result.zipPath);
@@ -105,19 +102,6 @@ export default function CardGenerator() {
     }
   };
 
-  const handleGerarJornal = async () => {
-  if (!uploadedFilePath) return;
-
-  const result = await generateJornalMutation.mutateAsync({
-    filePath: uploadedFilePath,
-    sessionId,
-  });
-
-  if (result?.jornalPath) {
-    window.open(`/api/download?zipPath=${result.jornalPath}`, "_blank");
-  }
-};
-  
   const bgColor = isDark ? "bg-gradient-to-br from-gray-900 via-blue-950 to-purple-950" : "bg-gradient-to-br from-slate-100 via-blue-100 to-purple-100";
   const cardBg = isDark ? "bg-white/10 backdrop-blur-lg border border-white/20" : "bg-white/50 backdrop-blur-lg border border-white/80";
   const textPrimary = isDark ? "text-white" : "text-slate-900";
