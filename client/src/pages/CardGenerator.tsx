@@ -104,7 +104,7 @@ export default function CardGenerator() {
       setError(err instanceof Error ? err.message : "Erro ao baixar arquivo");
     }
   };
-};  // 👈 FECHA A FUNÇÃO
+
 
 // 👇 AGORA SIM, FORA DELA
 const handleGerarJornal = async () => {
