@@ -13,6 +13,9 @@ import { serveStatic, setupVite } from "./vite";
 import { setupUploadRoute } from "../uploadHandler";
 import { setupLogoUploadRoute } from "../logoUploadHandler";
 
+// ✅ IMPORT NOVO
+import { renderJornalTeste } from "./jornalTeste";
+
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
     const server = net.createServer();
@@ -35,18 +38,22 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 async function startServer() {
   const app = express();
   const server = createServer(app);
+
   const io = new SocketIOServer(server, {
     cors: {
       origin: "*",
       methods: ["GET", "POST"],
     },
   });
-  // Configure body parser with larger size limit for file uploads
+
+  // Configure body parser
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
-  // OAuth callback under /api/oauth/callback
+
+  // OAuth
   registerOAuthRoutes(app);
-  // tRPC API with Socket.io context
+
+  // tRPC API
   app.use(
     "/api/trpc",
     createExpressMiddleware({
@@ -55,7 +62,7 @@ async function startServer() {
     })
   );
 
-  // Socket.io connection handler
+  // Socket.io
   io.on("connection", (socket) => {
     console.log(`Client connected: ${socket.id}`);
 
@@ -69,18 +76,24 @@ async function startServer() {
     });
   });
 
-  // Setup upload route
+  // Uploads
   setupUploadRoute(app);
-  // Setup logo upload route
   setupLogoUploadRoute(app);
-  // development mode uses Vite, production mode uses static files
+
+  // ✅ NOVA ROTA DE TESTE
+  app.get("/teste-jornal", (req, res) => {
+    const html = renderJornalTeste();
+    res.send(html);
+  });
+
+  // Frontend (Vite ou build)
   if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);
   } else {
     serveStatic(app);
   }
 
-  // Cleanup old files on startup
+  // Cleanup
   const uploadsDir = path.resolve("uploads");
   const outputDir = path.resolve("output");
   const tmpDir = path.resolve("tmp");
@@ -92,7 +105,7 @@ async function startServer() {
         try {
           fs.unlinkSync(path.join(dir, file));
         } catch (e) {
-          // Ignore cleanup errors
+          // ignore
         }
       }
     }
