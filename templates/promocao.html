@@ -54,14 +54,13 @@ body {
   position: relative;
 }
 
-/* ===== SELO DINÂMICO ===== */
+/* ===== SELO ===== */
 .selo {
   position: absolute;
   top: -8px;
   left: -8px;
   width: 130px;
   height: 65px;
-  background: transparent;
   display: none;
   z-index: 999;
 }
@@ -70,7 +69,6 @@ body {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  display: block;
 }
 
 /* TOPO */
@@ -100,7 +98,7 @@ body {
   white-space: nowrap;
 }
 
-/* BLOCO CENTRAL */
+/* CENTRAL */
 .area-central {
   display: flex;
   flex-direction: column;
@@ -108,14 +106,18 @@ body {
   gap: 25px;
 }
 
+/* 🔴 TEXTO DINÂMICO AJUSTADO */
 .texto-topo {
-  font-size: 26px;
-  line-height: 1.2;
+  font-size: 50px;
+  line-height: 1.1;
   max-width: 560px;
+  height: 120px;
   text-align: center;
   word-break: break-word;
+  overflow: hidden;
 }
 
+/* VALOR */
 .valor-container {
   display: flex;
   justify-content: center;
@@ -134,12 +136,15 @@ body {
   font-weight: 700;
 }
 
+/* 🔴 COMPLEMENTO AJUSTADO */
 .complemento {
-  font-size: 24px;
-  line-height: 1.2;
+  font-size: 36px;
+  line-height: 1.1;
   max-width: 560px;
+  height: 100px;
   text-align: center;
   word-break: break-word;
+  overflow: hidden;
 }
 
 .legal {
@@ -173,7 +178,6 @@ body {
 
 <div class="card">
 
-  <!-- SELO DINÂMICO -->
   <div class="selo" id="selo-container">
     <img id="selo-img" />
   </div>
@@ -190,7 +194,7 @@ body {
 
   <div class="area-central">
 
-    <div class="texto-topo">
+    <div class="texto-topo" id="texto-topo">
       {{TEXTO}}
     </div>
 
@@ -204,7 +208,7 @@ body {
       DE DESCONTO
     </div>
 
-    <div class="complemento">
+    <div class="complemento" id="complemento">
       {{COMPLEMENTO}}
     </div>
 
@@ -228,7 +232,23 @@ body {
 <script>
 window.addEventListener("load", function () {
 
-  /* ===== SEGMENTO ===== */
+  function autoFit(el, max = 60, min = 16) {
+    let size = max;
+    el.style.fontSize = size + "px";
+
+    while (
+      (el.scrollHeight > el.clientHeight || el.scrollWidth > el.clientWidth) &&
+      size > min
+    ) {
+      size -= 1;
+      el.style.fontSize = size + "px";
+    }
+  }
+
+  autoFit(document.getElementById("texto-topo"), 50, 18);
+  autoFit(document.getElementById("complemento"), 36, 16);
+
+  /* SEGMENTO */
   const segmento = document.getElementById("segmento-bloco");
   const valorSegmento = "{{SEGMENTO}}".trim();
 
@@ -236,7 +256,7 @@ window.addEventListener("load", function () {
     segmento.style.display = "none";
   }
 
-  /* ===== SELO ===== */
+  /* SELO */
   const seloContainer = document.getElementById("selo-container");
   const seloImg = document.getElementById("selo-img");
   const valorSelo = "{{SELO}}".trim();
