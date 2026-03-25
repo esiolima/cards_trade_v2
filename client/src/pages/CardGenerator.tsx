@@ -105,27 +105,26 @@ export default function CardGenerator() {
     }
   };
 
+  const handleGerarJornal = async () => {
+    if (!uploadedFilePath) return;
 
-// 👇 AGORA SIM, FORA DELA
-const handleGerarJornal = async () => {
-  if (!uploadedFilePath) return;
+    try {
+      const result = await generateJornalMutation.mutateAsync({
+        filePath: uploadedFilePath,
+        sessionId,
+      });
 
-  try {
-    const result = await generateJornalMutation.mutateAsync({
-      filePath: uploadedFilePath,
-      sessionId,
-    });
-
-    if (result?.jornalPath) {
-      window.open(
-        `/api/download?zipPath=${encodeURIComponent(result.jornalPath)}`,
-        "_blank"
-      );
+      if (result?.jornalPath) {
+        window.open(
+          `/api/download?zipPath=${encodeURIComponent(result.jornalPath)}`,
+          "_blank"
+        );
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao gerar jornal");
     }
-  } catch {
-    setError("Erro ao gerar jornal");
-  }
-};
+  };
+
   const bgColor = isDark ? "bg-gradient-to-br from-gray-900 via-blue-950 to-purple-950" : "bg-gradient-to-br from-slate-100 via-blue-100 to-purple-100";
   const cardBg = isDark ? "bg-white/10 backdrop-blur-lg border border-white/20" : "bg-white/50 backdrop-blur-lg border border-white/80";
   const textPrimary = isDark ? "text-white" : "text-slate-900";
@@ -184,7 +183,7 @@ const handleGerarJornal = async () => {
                     </div>
                   )}
                   {error && (
-                    <div className={`${isDark ? 'bg-red-500/20 border-red-400/50' : 'bg-red-500/10 border-red-500/20'} rounded-lg p-4 flex items-start space-x-3`}>
+                    <div className={`${isDark ? 'bg-red-500/20 border-red-400/50' : 'bg-red-500/10 border-red-500/20'}`} rounded-lg p-4 flex items-start space-x-3`}>
                       <AlertCircle className={`w-5 h-5 ${isDark ? 'text-red-300' : 'text-red-600'} flex-shrink-0 mt-0.5`} />
                       <div>
                         <p className={`font-medium ${isDark ? 'text-red-200' : 'text-red-800'}`}>Erro</p>
@@ -222,42 +221,75 @@ const handleGerarJornal = async () => {
                   <div className="text-center">
                     <div className={`inline-flex items-center justify-center w-20 h-20 rounded-full mb-4 ${isDark ? 'bg-green-500/20' : 'bg-green-500/10'}`}><CheckCircle2 className={`w-10 h-10 ${isDark ? 'text-green-300' : 'text-green-600'}`} /></div>
                     <h2 className={`text-2xl font-bold ${textPrimary} mb-2`}>Processamento Concluído!</h2>
-                    <p className={textSecondary}>{progress?.total} cards foram gerados com sucesso</p>
+                    <p className={textSecondary}>Seus cards foram gerados com sucesso. Baixe o arquivo ZIP ou o jornal em PDF.</p>
                   </div>
-                  <div className={`${isDark ? 'bg-green-500/20 border-green-400/50' : 'bg-green-500/10 border-green-500/20'} rounded-lg p-6 border`}><div className="flex items-center justify-between"><span className={`font-medium ${isDark ? 'text-green-200' : 'text-green-800'}`}>Cards Gerados</span><span className={`text-3xl font-bold ${isDark ? 'text-green-300' : 'text-green-600'}`}>{progress?.total}</span></div></div>
-                  <Button onClick={handleDownload} className="w-full bg-green-600 hover:bg-green-500 text-white py-6 text-lg font-semibold rounded-lg transition-all duration-300 flex items-center justify-center space-x-2"><Download className="w-5 h-5" /><span>Baixar Cards (ZIP)</span></Button>
-                  <Button onClick={handleGerarJornal}>
-                   Gerar Jornal (PDF)
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <Button
+                      onClick={handleDownload}
+                      className={`flex-1 text-white py-6 text-lg font-semibold rounded-lg transition-all duration-300 ${isDark ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-500 hover:bg-blue-600'}`}
+                    >
+                      <Download className="w-5 h-5 mr-2" /> Baixar Cards (ZIP)
+                    </Button>
+                    <Button
+                      onClick={handleGerarJornal}
+                      className={`flex-1 text-white py-6 text-lg font-semibold rounded-lg transition-all duration-300 ${isDark ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-green-500 hover:bg-green-600'}`}
+                    >
+                      <FileText className="w-5 h-5 mr-2" /> Gerar Jornal (PDF)
+                    </Button>
+                  </div>
+                  <Button
+                    onClick={() => { setZipPath(null); setFile(null); setOriginalFileName(null); setUploadedFilePath(null); setProgress(null); setError(null); }}
+                    variant="outline"
+                    className={`w-full py-6 text-lg font-semibold rounded-lg transition-all duration-300 ${isDark ? 'border-white/20 text-white hover:bg-white/10' : 'border-slate-300 text-slate-700 hover:bg-slate-100'}`}
+                  >
+                    Processar Nova Planilha
                   </Button>
-                  <Button onClick={() => { setFile(null); setZipPath(null); setProgress(null); setError(null); setOriginalFileName(null); }} className={`w-full py-6 text-lg font-semibold transition-all duration-300 ${isDark ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-black/5 hover:bg-black/10 text-slate-800'}`}>Processar Outro Arquivo</Button>
                 </div>
               )}
             </div>
           </div>
 
-          <div className="space-y-4">
-            {[{ icon: "✨", title: "Múltiplos Tipos", description: "Cupons, Promoções, Quedas de Preço, Cashback e BC" }, { icon: "⚡", title: "Processamento Rápido", description: "Geração paralela com progresso em tempo real" }, { icon: "📦", title: "Download Fácil", description: "Todos os cards em um arquivo ZIP" }].map((feature, i) => (
-              <div key={i} className={`${cardBg} rounded-xl p-5 shadow-lg transition-all duration-300 hover:border-white/40`}>
-                <div className="flex items-start space-x-4">
-                  <div className="text-2xl mt-1">{feature.icon}</div>
-                  <div>
-                    <h3 className={`font-semibold ${textPrimary} mb-1`}>{feature.title}</h3>
-                    <p className={`text-sm ${textSecondary}`}>{feature.description}</p>
-                  </div>
+          <div className="lg:col-span-1">
+            <div className={`${cardBg} rounded-2xl p-8 shadow-2xl transition-all duration-300`}>
+              <h2 className={`text-2xl font-bold ${textPrimary} mb-4`}>Status do Processamento</h2>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className={textSecondary}>Arquivo Selecionado:</span>
+                  <span className={`font-medium ${textPrimary}`}>{file?.name || "Nenhum arquivo"}</span>
                 </div>
+                <div className="flex items-center justify-between">
+                  <span className={textSecondary}>Status:</span>
+                  {isProcessing ? (
+                    <span className={`font-medium ${accentColor}`}>Processando...</span>
+                  ) : zipPath ? (
+                    <span className={`font-medium ${isDark ? 'text-green-300' : 'text-green-600'}`}>Concluído</span>
+                  ) : error ? (
+                    <span className={`font-medium ${isDark ? 'text-red-300' : 'text-red-600'}`}>Erro</span>
+                  ) : (
+                    <span className={textSecondary}>Aguardando</span>
+                  )}
+                </div>
+                {progress && (
+                  <div className="flex items-center justify-between">
+                    <span className={textSecondary}>Progresso:</span>
+                    <span className={`font-medium ${accentColor}`}>{progress.percentage}%</span>
+                  </div>
+                )}
+                {zipPath && (
+                  <div className="flex items-center justify-between">
+                    <span className={textSecondary}>Caminho do ZIP:</span>
+                    <span className={`font-medium ${textPrimary} truncate max-w-[150px]`}>{zipPath.split("/").pop()}</span>
+                  </div>
+                )}
+                {error && (
+                  <div className="flex items-center justify-between">
+                    <span className={textSecondary}>Mensagem de Erro:</span>
+                    <span className={`font-medium ${isDark ? 'text-red-300' : 'text-red-600'} truncate max-w-[150px]`}>{error}</span>
+                  </div>
+                )}
               </div>
-            ))}
-            <Button onClick={() => setLocation("/logos")} className={`w-full text-white py-6 text-lg font-semibold rounded-lg transition-all duration-300 flex items-center justify-center space-x-2 ${isDark ? 'bg-purple-600/80 hover:bg-purple-600' : 'bg-purple-600 hover:bg-purple-700'}`}>
-              <Image className="w-5 h-5" />
-              <span>Gerenciar Logos</span>
-            </Button>
+            </div>
           </div>
-        </div>
-
-        <div className={`mt-16 pt-8 border-t ${borderColor} text-center`}>
-          <p className={`text-sm ${textSecondary}`}>
-            Desenvolvido por Esio Lima - Versão 2.3
-          </p>
         </div>
       </div>
     </div>
