@@ -293,6 +293,14 @@ export class CardGenerator extends EventEmitter {
           .card {
             width: 100%;
           }
+          .card {
+            overflow: hidden;
+          }
+
+          .card * {
+            transform: none !important;
+            scale: 1 !important;
+          }
         </style>
       </head>
       <body>
