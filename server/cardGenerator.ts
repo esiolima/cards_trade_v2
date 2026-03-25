@@ -306,10 +306,11 @@ export class CardGenerator extends EventEmitter {
           box-shadow: 0 20px 40px rgba(0,0,0,0.5 );
         }
         .grid {
-          display: grid;
-          grid-template-columns: repeat(3, ${cardWidth}px);
+          display: flex; /* Alterado de grid para flex */
+          flex-wrap: wrap; /* Permite que os itens quebrem para a próxima linha */
+          justify-content: center; /* Centraliza os itens na linha */
           gap: ${gap}px;
-          justify-content: center;
+          /* Removido grid-template-columns */
         }
         .card-wrapper {
           width: ${cardWidth}px;
