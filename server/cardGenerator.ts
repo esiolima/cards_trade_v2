@@ -303,7 +303,7 @@ export class CardGenerator extends EventEmitter {
           display: inline-block;
           margin-bottom: 80px;
           text-transform: uppercase;
-          box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+          box-shadow: 0 20px 40px rgba(0,0,0,0.5 );
         }
         .grid {
           display: grid;
@@ -524,7 +524,7 @@ export class CardGenerator extends EventEmitter {
                  valor.style.whiteSpace = 'normal';
                  valor.style.width = '600px';
                  valor.style.display = 'block';
-                 // Ponto de partida 50% menor
+                 // Ponto de partida 50% menor para garantir que comece cabendo ou quase cabendo
                  const currentFs = parseInt(window.getComputedStyle(valor).fontSize);
                  valor.style.fontSize = (currentFs * 0.5) + 'px';
               }
@@ -569,7 +569,7 @@ export class CardGenerator extends EventEmitter {
     await page.setContent(html, { waitUntil: "networkidle0" });
     await page.evaluateHandle('document.fonts.ready');
     
-    // AUTO-SHRINK VIA PUPPETEER (Garantido v33 - Execução explícita no cliente e espera)
+    // AUTO-SHRINK VIA PUPPETEER (Execução explícita no cliente e espera)
     await page.evaluate(async () => {
       // @ts-ignore
       await runAutoShrink();
