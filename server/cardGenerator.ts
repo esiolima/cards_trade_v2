@@ -292,8 +292,6 @@ export class CardGenerator extends EventEmitter {
 
           .card {
             width: 100%;
-            transform: scale(0.48);
-            transform-origin: top left;
           }
         </style>
       </head>
