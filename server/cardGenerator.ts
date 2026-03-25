@@ -259,6 +259,11 @@ export class CardGenerator extends EventEmitter {
     <html>
       <head>
         <style>
+          .card {
+            width: 100%;
+            transform: scale(0.5);
+            transform-origin: top left;
+          }
           body {
             margin: 0;
             background: #5a2d0c;
@@ -317,6 +322,25 @@ export class CardGenerator extends EventEmitter {
             <div class="grid">
         `;
 
+        const tipo = this.normalizeType(row.tipo);
+
+const templatePath = path.join(TEMPLATES_DIR, `${tipo}.html`);
+
+if (fs.existsSync(templatePath)) {
+  let cardHtml = fs.readFileSync(templatePath, "utf8");
+
+  cardHtml = cardHtml
+    .replaceAll("{{TEXTO}}", String(row.texto ?? ""))
+    .replaceAll("{{VALOR}}", String(row.valor ?? ""))
+    .replaceAll("{{COMPLEMENTO}}", String(row.complemento ?? ""))
+    .replaceAll("{{LEGAL}}", String(row.legal ?? ""))
+    .replaceAll("{{CUPOM}}", String(row.cupom ?? ""))
+    .replaceAll("{{UF}}", row.uf ? `UF: ${row.uf}` : "")
+    .replaceAll("{{URN}}", row.urn ? `URN: ${row.urn}` : "");
+
+  html += `<div class="card">${cardHtml}</div>`;
+}
+        
         currentCategoria = categoria;
       }
 
