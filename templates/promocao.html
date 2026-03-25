@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=700, initial-scale=1.0" />
-<title>Promoção</title>
+<title>Queda de Preço</title>
 
 <style>
 
@@ -24,10 +24,10 @@
 }
 
 * {
-  text-transform: uppercase;
-  color: #2b4474;
   box-sizing: border-box;
+  text-transform: uppercase;
   font-family: 'Inter', sans-serif;
+  color: #1F3C6E;
 }
 
 body {
@@ -40,22 +40,21 @@ body {
   align-items: center;
 }
 
-/* ================= CARD ================= */
 .card {
   width: 700px;
   height: 1058px;
   border: 8px solid #e0b84b;
   border-radius: 40px;
-  padding: 70px 40px 50px 40px;
-  position: relative;
-  overflow: visible;
+  background: #ffffff;
+  padding: 60px 40px 40px 40px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  background: #ffffff;
+  overflow: visible;
+  position: relative;
 }
 
-/* ===== SELO DINÂMICO TRANSPARENTE ===== */
+/* ===== SELO DINÂMICO ===== */
 .selo {
   position: absolute;
   top: -8px;
@@ -63,7 +62,7 @@ body {
   width: 130px;
   height: 65px;
   background: transparent;
-  display: none; /* começa oculto */
+  display: none;
   z-index: 999;
 }
 
@@ -74,7 +73,7 @@ body {
   display: block;
 }
 
-/* ===== TOPO ===== */
+/* TOPO */
 .topo {
   display: flex;
   flex-direction: column;
@@ -82,93 +81,87 @@ body {
 }
 
 .logo {
-  margin-bottom: 25px;
+  margin-bottom: 20px;
 }
 .logo img {
-  max-width: 220px;
+  max-width: 240px;
   max-height: 120px;
 }
 
 .tarja {
-  background: #ff7a00;
+  background: #1a7d00;
   color: #ffffff;
-  padding: 20px 70px;
-  border-radius: 999px;
   font-weight: 700;
-  font-size: 54px;
+  font-size: 42px;
   text-align: center;
+  padding: 18px 40px;
+  border-radius: 999px;
+  margin-bottom: 30px;
   white-space: nowrap;
 }
 
-/* ===== BLOCO CENTRAL ===== */
-.bloco-central {
+/* BLOCO CENTRAL */
+.area-central {
   display: flex;
   flex-direction: column;
   align-items: center;
+  gap: 25px;
 }
 
 .texto-topo {
+  font-size: 26px;
+  line-height: 1.2;
+  max-width: 560px;
   text-align: center;
-  font-size: 28px;
-  max-width: 550px;
-  line-height: 1.15;
   word-break: break-word;
-  margin-bottom: 30px;
 }
 
 .valor-container {
-  width: 100%;
-  height: 360px;
   display: flex;
-  align-items: center;
   justify-content: center;
-  overflow: hidden;
+  align-items: flex-end;
 }
 
 .valor-texto {
   font-weight: 900;
-  font-size: 480px;
+  font-size: clamp(140px, 22vw, 260px);
   line-height: 1;
-  text-align: center;
   white-space: nowrap;
 }
 
-/* ===== BLOCO INFERIOR ===== */
-.bloco-inferior {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
+.desconto {
+  font-size: 44px;
+  font-weight: 700;
 }
 
 .complemento {
+  font-size: 24px;
+  line-height: 1.2;
+  max-width: 560px;
   text-align: center;
-  font-size: 28px;
-  max-width: 550px;
-  line-height: 1.15;
   word-break: break-word;
-  margin-top: 50px;
 }
 
 .legal {
-  text-align: center;
   font-size: 18px;
-  max-width: 550px;
-  line-height: 1.15;
+  line-height: 1.2;
+  max-width: 560px;
+  text-align: center;
   word-break: break-word;
 }
 
+/* RODAPÉ */
 .rodape {
   text-align: center;
 }
 
 .uf {
-  font-size: clamp(20px, 2vw, 24px);
+  font-size: 22px;
   font-weight: 700;
 }
 
 .segmento-wrapper {
-  margin-top: 10px;
+  margin-top: 12px;
   font-size: 18px;
   font-weight: 400;
 }
@@ -180,39 +173,36 @@ body {
 
 <div class="card">
 
-  <!-- SELO -->
+  <!-- SELO DINÂMICO -->
   <div class="selo" id="selo-container">
     <img id="selo-img" />
   </div>
 
-  <!-- TOPO -->
   <div class="topo">
     <div class="logo">
       <img src="{{LOGO}}" />
     </div>
 
     <div class="tarja">
-      PROMOÇÃO
+      QUEDA DE PREÇO
     </div>
   </div>
 
-  <!-- CENTRO -->
-  <div class="bloco-central">
+  <div class="area-central">
 
     <div class="texto-topo">
       {{TEXTO}}
     </div>
 
-    <div class="valor-container" id="valor-container">
-      <div class="valor-texto" id="valor-texto">
-        {{VALOR}}
+    <div class="valor-container">
+      <div class="valor-texto">
+        {{VALOR}}%
       </div>
     </div>
 
-  </div>
-
-  <!-- INFERIOR -->
-  <div class="bloco-inferior">
+    <div class="desconto">
+      DE DESCONTO
+    </div>
 
     <div class="complemento">
       {{COMPLEMENTO}}
@@ -222,39 +212,21 @@ body {
       {{LEGAL}}
     </div>
 
-    <div class="rodape">
-      <div class="uf">{{URN}}</div>
-      <div class="uf">{{UF}}</div>
+  </div>
 
-      <div class="segmento-wrapper" id="segmento-bloco">
-        SEGMENTO DE CLIENTES: {{SEGMENTO}}
-      </div>
+  <div class="rodape">
+    <div class="uf">{{URN}}</div>
+    <div class="uf">{{UF}}</div>
+
+    <div class="segmento-wrapper" id="segmento-bloco">
+      SEGMENTO DE CLIENTES: {{SEGMENTO}}
     </div>
-
   </div>
 
 </div>
 
 <script>
 window.addEventListener("load", function () {
-
-  /* ===== AJUSTE VALOR ===== */
-  const container = document.getElementById("valor-container");
-  const texto = document.getElementById("valor-texto");
-
-  if (container && texto) {
-    let fontSize = 480;
-    texto.style.fontSize = fontSize + "px";
-
-    while (
-      (texto.scrollWidth > container.clientWidth ||
-       texto.scrollHeight > container.clientHeight) &&
-      fontSize > 80
-    ) {
-      fontSize -= 6;
-      texto.style.fontSize = fontSize + "px";
-    }
-  }
 
   /* ===== SEGMENTO ===== */
   const segmento = document.getElementById("segmento-bloco");
@@ -264,7 +236,7 @@ window.addEventListener("load", function () {
     segmento.style.display = "none";
   }
 
-  /* ===== SELO DINÂMICO ===== */
+  /* ===== SELO ===== */
   const seloContainer = document.getElementById("selo-container");
   const seloImg = document.getElementById("selo-img");
   const valorSelo = "{{SELO}}".trim();
