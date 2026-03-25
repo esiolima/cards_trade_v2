@@ -259,15 +259,10 @@ export class CardGenerator extends EventEmitter {
     <html>
       <head>
         <style>
-          .card {
-            width: 100%;
-            transform: scale(0.5);
-            transform-origin: top left;
-          }
           body {
-            margin: 0;
-            background: #5a2d0c;
-            font-family: Arial, sans-serif;
+          margin: 0;
+          background: #5a2d0c;
+          font-family: Arial, sans-serif;
           }
 
           .container {
@@ -296,9 +291,9 @@ export class CardGenerator extends EventEmitter {
           }
 
           .card {
-            background: white;
-            border-radius: 16px;
-            height: 300px;
+            width: 100%;
+            transform: scale(0.48);
+            transform-origin: top left;
           }
         </style>
       </head>
