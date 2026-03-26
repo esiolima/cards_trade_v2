@@ -13,6 +13,10 @@ async function startServer() {
   const app = express();
   const server = createServer(app);
 
+  // Aumentar o limite de tamanho do corpo da requisição para lidar com imagens e textos grandes
+  app.use(express.json({ limit: "50mb" }));
+  app.use(express.urlencoded({ extended: true, limit: "50mb" }));
+
   app.use(cors({
     origin: "*",
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -58,17 +62,26 @@ async function startServer() {
   // Rota para gerar o jornal consolidado
   app.post("/api/generate-jornal", upload.single("header"), async (req, res) => {
     try {
+      // O multer coloca os campos de texto no req.body e o arquivo no req.file
       const { backgroundColor, categoryBoxColor, footerText } = req.body;
       const headerPath = req.file ? req.file.path : undefined;
 
+      console.log("Iniciando geração do jornal com as opções:", { 
+        backgroundColor, 
+        categoryBoxColor, 
+        footerTextLength: footerText?.length,
+        hasHeader: !!headerPath 
+      });
+
       const pdfPath = await generator.generateJornal({
         headerPath,
-        backgroundColor,
-        categoryBoxColor,
-        footerText
+        backgroundColor: backgroundColor || "#1a365d",
+        categoryBoxColor: categoryBoxColor || "#2563eb",
+        footerText: footerText || ""
       });
 
       res.download(pdfPath, "jornal_ofertas.pdf", (err) => {
+        if (err) console.error("Erro ao enviar PDF:", err);
         if (headerPath && fs.existsSync(headerPath)) fs.unlinkSync(headerPath);
       });
     } catch (error: any) {
@@ -89,10 +102,7 @@ async function startServer() {
   // Roteamento inteligente de arquivos estáticos para produção no Railway
   const clientDistPath = path.join(process.cwd(), "dist", "public");
   const fallbackDistPath = path.join(process.cwd(), "dist", "client");
-  
   const finalDistPath = fs.existsSync(clientDistPath) ? clientDistPath : fallbackDistPath;
-  
-  console.log(`Servindo arquivos estáticos de: ${finalDistPath}`);
   
   app.use(express.static(finalDistPath));
   
