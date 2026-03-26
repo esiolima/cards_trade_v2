@@ -89,9 +89,61 @@ export class CardGenerator extends EventEmitter {
 
   imageToBase64(imagePath: string): string {
     if (!imagePath || !fs.existsSync(imagePath)) return "";
-    const ext = path.extname(imagePath).replace(".", "");
+    const ext = path.extname(imagePath).replace(".", "").toLowerCase();
     const buffer = fs.readFileSync(imagePath);
-    return `data:image/${ext};base64,${buffer.toString("base64")}`;
+    
+    let mimeType = `image/${ext}`;
+    if (ext === "svg") mimeType = "image/svg+xml";
+    if (ext === "jpg") mimeType = "image/jpeg";
+
+    return `data:${mimeType};base64,${buffer.toString("base64")}`;
+  }
+
+  /**
+   * Busca inteligente de logo (Melhorada):
+   * 1. Tenta o nome exato fornecido.
+   * 2. Tenta o nome sem espaços e em minúsculo com várias extensões.
+   * 3. Tenta buscar por prefixo (se o arquivo começa com o que foi digitado).
+   * 4. Retorna 'blank.png' se nada for encontrado.
+   */
+  private findLogoFile(logoName: string): string {
+    if (!logoName || String(logoName).trim() === "") return "blank.png";
+
+    const cleanName = String(logoName).trim();
+    const extensions = [".png", ".jpg", ".jpeg", ".webp", ".svg"];
+
+    // 1. Tenta o caminho exato (caso o usuário tenha digitado a extensão correta)
+    if (fs.existsSync(path.join(LOGOS_DIR, cleanName))) {
+      return cleanName;
+    }
+
+    // 2. Tenta buscar o arquivo ignorando maiúsculas/minúsculas e espaços
+    const searchName = cleanName.toLowerCase();
+    const filesInLogos = fs.readdirSync(LOGOS_DIR);
+
+    // Busca por nome exato sem extensão (ex: "unilever" -> "unilever.png")
+    for (const ext of extensions) {
+      const target = searchName.endsWith(ext) ? searchName : searchName + ext;
+      const found = filesInLogos.find(f => f.toLowerCase() === target);
+      if (found) return found;
+    }
+
+    // 3. BUSCA POR PREFIXO (ex: "Unileve" -> "unilever.png")
+    // Filtramos apenas arquivos de imagem válidos
+    const validFiles = filesInLogos.filter(f => {
+      const ext = path.extname(f).toLowerCase();
+      return extensions.includes(ext);
+    });
+
+    // Tenta encontrar um arquivo que COMEÇA com o que foi digitado
+    const prefixMatch = validFiles.find(f => {
+      const baseName = path.parse(f).name.toLowerCase();
+      return baseName.startsWith(searchName);
+    });
+
+    if (prefixMatch) return prefixMatch;
+
+    return "blank.png";
   }
 
   async generateCards(
@@ -127,16 +179,7 @@ export class CardGenerator extends EventEmitter {
         valorFinal = valorFinal.replace(/%/g, "").trim();
       }
 
-      let logoFile = "blank.png";
-
-      if (row.logo && String(row.logo).trim() !== "") {
-        const possibleLogo = String(row.logo).trim();
-        const possiblePath = path.join(LOGOS_DIR, possibleLogo);
-
-        if (fs.existsSync(possiblePath)) {
-          logoFile = possibleLogo;
-        }
-      }
+      const logoFile = this.findLogoFile(row.logo);
 
       const logoBase64 = this.imageToBase64(
         path.join(LOGOS_DIR, logoFile)
@@ -221,7 +264,6 @@ export class CardGenerator extends EventEmitter {
       });
     }
 
-    // 🔥 NOME DO ZIP MELHORADO
     const baseName = originalFileName
       ? path.parse(originalFileName).name
       : path.parse(excelFilePath).name;

@@ -46,7 +46,7 @@ body {
   height: 1058px;
   border: 8px solid #e0b84b;
   border-radius: 40px;
-  padding: 70px 40px 50px 40px;
+  padding: 70px 40px 40px 40px; /* Reduzido padding inferior para dar margem ao segmento */
   position: relative;
   overflow: visible;
   display: flex;
@@ -113,7 +113,8 @@ body {
   max-width: 550px;
   line-height: 1.15;
   word-break: break-word;
-  margin-bottom: 30px;
+  margin-top: 25px; /* Descolado do box PROMOÇÃO */
+  margin-bottom: 20px;
 }
 
 .valor-container {
@@ -128,9 +129,13 @@ body {
 .valor-texto {
   font-weight: 900;
   font-size: 480px;
-  line-height: 1;
+  line-height: 0.9; /* Ajustado para permitir quebra de linha melhor */
   text-align: center;
-  white-space: nowrap;
+  word-break: break-word; /* Permitir quebra de linha */
+  display: -webkit-box;
+  -webkit-line-clamp: 3; /* Máximo de 3 linhas */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 /* ===== BLOCO INFERIOR ===== */
@@ -138,16 +143,16 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
 }
 
 .complemento {
   text-align: center;
-  font-size: 28px;
+  font-size: 22px; /* Reduzido conforme solicitado */
   max-width: 550px;
   line-height: 1.15;
   word-break: break-word;
-  margin-top: 50px;
+  margin-top: 10px;
 }
 
 .legal {
@@ -160,6 +165,7 @@ body {
 
 .rodape {
   text-align: center;
+  margin-bottom: 15px; /* Margem de segurança na base */
 }
 
 .uf {
@@ -246,12 +252,12 @@ window.addEventListener("load", function () {
     let fontSize = 480;
     texto.style.fontSize = fontSize + "px";
 
+    // Lógica de ajuste: reduz a fonte se extrapolar o container (mesmo com quebra de linha)
     while (
-      (texto.scrollWidth > container.clientWidth ||
-       texto.scrollHeight > container.clientHeight) &&
-      fontSize > 80
+      (texto.scrollHeight > container.clientHeight || texto.scrollWidth > container.clientWidth) &&
+      fontSize > 60
     ) {
-      fontSize -= 6;
+      fontSize -= 10;
       texto.style.fontSize = fontSize + "px";
     }
   }
