@@ -373,7 +373,7 @@ export class CardGenerator extends EventEmitter {
         .footer-legal {
           padding: 60px;
           color: ${contrastColor};
-          font-size: 16px;
+          font-size: 32px;
           text-align: center;
           font-weight: 700;
           text-transform: uppercase;
