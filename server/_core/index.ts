@@ -86,14 +86,26 @@ async function startServer() {
     io.emit("processProgress", data);
   });
 
-  if (process.env.NODE_ENV === "production") {
-    const clientDistPath = path.join(process.cwd(), "dist", "client");
-    app.use(express.static(clientDistPath));
-    app.get("*", (req, res) => {
-      if (req.path.startsWith("/api/")) return res.status(404).end();
-      res.sendFile(path.join(clientDistPath, "index.html"));
-    });
-  }
+  // Roteamento inteligente de arquivos estáticos para produção no Railway
+  const clientDistPath = path.join(process.cwd(), "dist", "public");
+  const fallbackDistPath = path.join(process.cwd(), "dist", "client");
+  
+  const finalDistPath = fs.existsSync(clientDistPath) ? clientDistPath : fallbackDistPath;
+  
+  console.log(`Servindo arquivos estáticos de: ${finalDistPath}`);
+  
+  app.use(express.static(finalDistPath));
+  
+  app.get("*", (req, res) => {
+    if (req.path.startsWith("/api/")) return res.status(404).json({ error: "API route not found" });
+    
+    const indexPath = path.join(finalDistPath, "index.html");
+    if (fs.existsSync(indexPath)) {
+      res.sendFile(indexPath);
+    } else {
+      res.status(404).send("Site não encontrado. Verifique o build do frontend.");
+    }
+  });
 
   const port = Number(process.env.PORT) || 8080;
   server.listen(port, "0.0.0.0", () => {
