@@ -25,7 +25,16 @@ export class CardGenerator extends EventEmitter {
     this.browser = await puppeteer.launch({
       executablePath:
         process.env.PUPPETEER_EXECUTABLE_PATH || "/usr/bin/chromium-browser",
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+      args: [
+        "--no-sandbox", 
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-accelerated-2d-canvas",
+        "--disable-gpu",
+        "--no-first-run",
+        "--no-zygote",
+        "--single-process"
+      ],
       headless: true,
     });
   }
@@ -180,6 +189,7 @@ export class CardGenerator extends EventEmitter {
 
       await page.goto(`file://${tmpHtmlPath}`, {
         waitUntil: "networkidle0",
+        timeout: 60000,
       });
 
       const ordemFinal =
@@ -210,8 +220,10 @@ export class CardGenerator extends EventEmitter {
         },
       });
 
-      await page.close();
-
+       await page.close();
+      // Sugerir coleta de lixo se possível (Node.js)
+      if (global.gc) global.gc();
+      
       processed++;
 
       this.emit("progress", {
