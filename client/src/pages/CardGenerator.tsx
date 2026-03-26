@@ -19,7 +19,8 @@ import {
   FileText, 
   Palette,
   Type,
-  Layout
+  Layout,
+  Cpu
 } from "lucide-react";
 
 interface ProgressData {
@@ -34,8 +35,8 @@ export default function CardGenerator() {
   const [headerFile, setHeaderFile] = useState<File | null>(null);
   
   // Persistência com localStorage
-  const [bgColor, setBgColor] = useState(() => localStorage.getItem("jornal_bgColor") || "#5a2d0c");
-  const [categoryBoxColor, setCategoryBoxColor] = useState(() => localStorage.getItem("jornal_categoryBoxColor") || "#1f7a3f");
+  const [bgColor, setBgColor] = useState(() => localStorage.getItem("jornal_bgColor") || "#1a365d");
+  const [categoryBoxColor, setCategoryBoxColor] = useState(() => localStorage.getItem("jornal_categoryBoxColor") || "#2563eb");
   const [footerText, setFooterText] = useState(() => localStorage.getItem("jornal_footerText") || "");
   const [lastHeaderName, setLastHeaderName] = useState(() => localStorage.getItem("jornal_lastHeaderName") || "");
 
@@ -175,34 +176,37 @@ export default function CardGenerator() {
     }
   };
 
-  const bgColorClass = isDark ? "bg-gradient-to-br from-gray-900 via-blue-950 to-purple-950" : "bg-gradient-to-br from-slate-100 via-blue-100 to-purple-100";
-  const cardBg = isDark ? "bg-white/10 backdrop-blur-lg border border-white/20" : "bg-white/50 backdrop-blur-lg border border-white/80";
-  const textPrimary = isDark ? "text-white" : "text-slate-900";
-  const textSecondary = isDark ? "text-slate-300" : "text-slate-600";
-  const borderColor = isDark ? "border-white/20" : "border-slate-300/50";
-  const accentColor = isDark ? "text-cyan-300" : "text-blue-600";
-  const uploadBg = isDark ? "bg-black/20" : "bg-white/30";
-  const uploadBorder = isDragging ? (isDark ? 'border-cyan-300' : 'border-blue-600') : (isDark ? "border-white/30 hover:border-white/50" : "border-blue-300/80 hover:border-blue-400");
+  // Nova paleta de cores baseada em AZUL
+  const bgColorClass = isDark ? "bg-gradient-to-br from-[#020617] via-[#0f172a] to-[#1e1b4b]" : "bg-gradient-to-br from-blue-50 via-indigo-50 to-sky-100";
+  const cardBg = isDark ? "bg-[#1e293b]/80 backdrop-blur-xl border border-blue-500/20" : "bg-white/80 backdrop-blur-xl border border-blue-200";
+  const textPrimary = isDark ? "text-blue-50" : "text-blue-950";
+  const textSecondary = isDark ? "text-blue-200/70" : "text-blue-800/70";
+  const borderColor = isDark ? "border-blue-500/20" : "border-blue-200";
+  const accentColor = isDark ? "text-blue-400" : "text-blue-600";
+  const uploadBg = isDark ? "bg-[#0f172a]/50" : "bg-blue-50/50";
+  const uploadBorder = isDragging ? (isDark ? 'border-blue-400' : 'border-blue-600') : (isDark ? "border-blue-500/30 hover:border-blue-400" : "border-blue-300 hover:border-blue-500");
 
   return (
-    <div className={`min-h-screen py-12 px-4 sm:px-6 lg:px-8 transition-colors duration-500 ${bgColorClass}`}>
-      <div className="max-w-6xl mx-auto">
+    <div className={`min-h-screen py-12 px-4 sm:px-6 lg:px-8 transition-colors duration-500 ${bgColorClass} flex flex-col`}>
+      <div className="max-w-6xl mx-auto flex-grow w-full">
         <div className="flex items-center justify-between mb-16">
           <div className="flex items-center space-x-4">
-            <img src="/martins-logo.png" alt="Martins" className="h-12 object-contain" />
+            <div className={`p-3 rounded-2xl ${isDark ? 'bg-blue-500/10' : 'bg-blue-600/10'}`}>
+              <Cpu className={`w-8 h-8 ${accentColor}`} />
+            </div>
             <div>
-              <h1 className={`text-3xl font-bold ${textPrimary}`}>Gerador de Cards</h1>
-              <p className={`text-sm ${textSecondary}`}>Núcleo de Comunicação e Marketing / Trade Martins</p>
+              <h1 className={`text-3xl font-black tracking-tight ${textPrimary}`}>Gerador de Jornal de Ofertas</h1>
+              <p className={`text-sm font-medium ${textSecondary}`}>Plataforma Inteligente de Automação de Cards</p>
             </div>
           </div>
-          <button onClick={() => setIsDark(!isDark)} className={`p-3 rounded-full transition-all duration-300 backdrop-blur-sm ${isDark ? "bg-white/10 hover:bg-white/20 text-yellow-400" : "bg-black/10 hover:bg-black/20 text-slate-700"}`}>
+          <button onClick={() => setIsDark(!isDark)} className={`p-3 rounded-full transition-all duration-300 backdrop-blur-sm shadow-lg ${isDark ? "bg-blue-500/10 hover:bg-blue-500/20 text-yellow-400" : "bg-blue-600/10 hover:bg-blue-600/20 text-blue-800"}`}>
             {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
           </button>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
-            <div className={`${cardBg} rounded-2xl p-8 shadow-2xl transition-all duration-300`}>
+            <div className={`${cardBg} rounded-3xl p-8 shadow-2xl transition-all duration-300`}>
               
               {!isProcessing && !zipPath && (
                 <div className="space-y-6">
@@ -210,9 +214,9 @@ export default function CardGenerator() {
                     <h2 className={`text-2xl font-bold ${textPrimary} mb-2`}>1. Escolha sua Planilha</h2>
                     <p className={textSecondary}>Converta dados Excel em cards PDF profissionais em segundos</p>
                   </div>
-                  <div onClick={() => document.getElementById("file-input")?.click()} onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop} className={`border-2 border-dashed rounded-xl p-12 text-center cursor-pointer transition-all duration-300 ${uploadBg} ${uploadBorder}`}>
+                  <div onClick={() => document.getElementById("file-input")?.click()} onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop} className={`border-2 border-dashed rounded-2xl p-12 text-center cursor-pointer transition-all duration-300 ${uploadBg} ${uploadBorder}`}>
                     <div className="flex flex-col items-center space-y-3 pointer-events-none">
-                      <div className={`p-4 rounded-full ${isDark ? 'bg-black/20' : 'bg-black/5'}`}><Upload className={`w-8 h-8 ${accentColor}`} /></div>
+                      <div className={`p-4 rounded-full ${isDark ? 'bg-blue-500/10' : 'bg-blue-600/10'}`}><Upload className={`w-8 h-8 ${accentColor}`} /></div>
                       <div>
                         <p className={`font-semibold ${textPrimary}`}>Clique ou arraste seu arquivo</p>
                         <p className={`text-sm ${textSecondary} mt-1`}>Apenas arquivos .xlsx (máximo 10MB)</p>
@@ -221,7 +225,7 @@ export default function CardGenerator() {
                     <input id="file-input" type="file" accept=".xlsx" onChange={handleInputChange} className="hidden" />
                   </div>
                   {file && (
-                    <div className={`${isDark ? 'bg-black/20' : 'bg-black/5'} rounded-lg p-4 flex items-center justify-between border ${borderColor}`}>
+                    <div className={`${isDark ? 'bg-blue-500/10' : 'bg-blue-600/5'} rounded-xl p-4 flex items-center justify-between border ${borderColor}`}>
                       <div className="flex items-center space-x-3">
                         <CheckCircle2 className={`w-5 h-5 ${accentColor}`} />
                         <div>
@@ -233,7 +237,7 @@ export default function CardGenerator() {
                     </div>
                   )}
                   {error && (
-                    <div className={`${isDark ? 'bg-red-500/20 border-red-400/50' : 'bg-red-500/10 border-red-500/20'} rounded-lg p-4 flex items-start space-x-3`}>
+                    <div className={`${isDark ? 'bg-red-500/20 border-red-400/50' : 'bg-red-500/10 border-red-500/20'} rounded-xl p-4 flex items-start space-x-3`}>
                       <AlertCircle className={`w-5 h-5 ${isDark ? 'text-red-300' : 'text-red-600'} flex-shrink-0 mt-0.5`} />
                       <div>
                         <p className={`font-medium ${isDark ? 'text-red-200' : 'text-red-800'}`}>Erro</p>
@@ -241,7 +245,7 @@ export default function CardGenerator() {
                       </div>
                     </div>
                   )}
-                  <Button onClick={handleUpload} disabled={!file || isProcessing} className={`w-full text-white py-6 text-lg font-semibold rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${isDark ? 'bg-cyan-500/80 hover:bg-cyan-500' : 'bg-blue-600 hover:bg-blue-700'}`}>
+                  <Button onClick={handleUpload} disabled={!file || isProcessing} className={`w-full text-white py-6 text-lg font-bold rounded-xl transition-all duration-300 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed ${isDark ? 'bg-blue-600 hover:bg-blue-500' : 'bg-blue-700 hover:bg-blue-800'}`}>
                     Processar Planilha
                   </Button>
                 </div>
@@ -250,17 +254,17 @@ export default function CardGenerator() {
               {isProcessing && progress && (
                 <div className="space-y-8">
                   <div className="text-center">
-                    <div className={`inline-flex items-center justify-center w-20 h-20 rounded-full mb-4 ${isDark ? "bg-black/20" : "bg-black/5"}`}><div className="animate-spin"><Hourglass className={`w-10 h-10 ${accentColor}`} /></div></div>
+                    <div className={`inline-flex items-center justify-center w-20 h-20 rounded-full mb-4 ${isDark ? "bg-blue-500/10" : "bg-blue-600/10"}`}><div className="animate-spin"><Hourglass className={`w-10 h-10 ${accentColor}`} /></div></div>
                     <h2 className={`text-2xl font-bold ${textPrimary} mb-2`}>Processando Cards</h2>
                     <p className={textSecondary}>{progress.currentCard}</p>
                   </div>
                   <div className="space-y-3">
                     <div className="flex justify-between items-center text-sm"><span className={`font-medium ${textPrimary}`}>Progresso</span><span className={`font-bold ${accentColor}`}>{progress.percentage}%</span></div>
-                    <div className={`w-full h-3 rounded-full overflow-hidden ${isDark ? "bg-black/30" : "bg-black/10"}`}><div className="h-full bg-gradient-to-r from-cyan-400 to-blue-500 transition-all duration-300" style={{ width: `${progress.percentage}%` }} /></div>
+                    <div className={`w-full h-3 rounded-full overflow-hidden ${isDark ? "bg-blue-900/50" : "bg-blue-100"}`}><div className="h-full bg-gradient-to-r from-blue-400 to-indigo-600 transition-all duration-300 shadow-[0_0_10px_rgba(59,130,246,0.5)]" style={{ width: `${progress.percentage}%` }} /></div>
                   </div>
                   <div className="grid grid-cols-3 gap-4">
                     {[{ label: "Processados", value: progress.processed }, { label: "Total", value: progress.total }, { label: "Restantes", value: progress.total - progress.processed }].map((stat, i) => (
-                      <div key={i} className={`rounded-lg p-4 text-center border ${isDark ? 'bg-black/20 border-white/10' : 'bg-black/5 border-slate-400/20'}`}><p className={`text-2xl font-bold ${accentColor}`}>{stat.value}</p><p className={`text-xs ${textSecondary} mt-1`}>{stat.label}</p></div>
+                      <div key={i} className={`rounded-xl p-4 text-center border ${isDark ? 'bg-blue-500/10 border-blue-500/20' : 'bg-blue-50/50 border-blue-200'}`}><p className={`text-2xl font-bold ${accentColor}`}>{stat.value}</p><p className={`text-xs ${textSecondary} mt-1 font-semibold`}>{stat.label}</p></div>
                     ))}
                   </div>
                 </div>
@@ -269,12 +273,12 @@ export default function CardGenerator() {
               {!isProcessing && zipPath && (
                 <div className="space-y-6">
                   <div className="text-center">
-                    <div className={`inline-flex items-center justify-center w-20 h-20 rounded-full mb-4 ${isDark ? "bg-green-500/20" : "bg-green-500/10"}`}><CheckCircle2 className="w-10 h-10 text-green-500" /></div>
+                    <div className={`inline-flex items-center justify-center w-20 h-20 rounded-full mb-4 ${isDark ? "bg-green-500/10" : "bg-green-500/5"}`}><CheckCircle2 className="w-10 h-10 text-green-500" /></div>
                     <h2 className={`text-2xl font-bold ${textPrimary} mb-2`}>Tudo Pronto!</h2>
                     <p className={textSecondary}>Seus cards foram gerados com sucesso.</p>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <Button onClick={() => { setZipPath(null); setFile(null); setUploadedFilePath(null); }} variant="outline" className={`py-6 ${isDark ? 'border-white/20 text-white hover:bg-white/10' : 'border-slate-300 text-slate-700 hover:bg-slate-50'}`}>Nova Planilha</Button>
+                    <Button onClick={() => { setZipPath(null); setFile(null); setUploadedFilePath(null); }} variant="outline" className={`py-6 rounded-xl border-blue-500/30 ${textPrimary} hover:bg-blue-500/10`}>Nova Planilha</Button>
                     <Button onClick={() => {
                         if (zipPath) {
                             const a = document.createElement("a");
@@ -282,14 +286,14 @@ export default function CardGenerator() {
                             a.download = "cards.zip";
                             a.click();
                         }
-                    }} className={`py-6 text-white ${isDark ? 'bg-green-600 hover:bg-green-500' : 'bg-green-600 hover:bg-green-700'}`}><Download className="w-5 h-5 mr-2" /> Baixar ZIP</Button>
+                    }} className={`py-6 rounded-xl text-white shadow-lg ${isDark ? 'bg-green-600 hover:bg-green-500' : 'bg-green-600 hover:bg-green-700'}`}><Download className="w-5 h-5 mr-2" /> Baixar ZIP</Button>
                   </div>
                 </div>
               )}
             </div>
 
-            {/* PERSONALIZAÇÃO SEMPRE VISÍVEL E PERSISTENTE */}
-            <div className={`${cardBg} rounded-2xl p-8 shadow-2xl transition-all duration-300 space-y-8`}>
+            {/* PERSONALIZAÇÃO */}
+            <div className={`${cardBg} rounded-3xl p-8 shadow-2xl transition-all duration-300 space-y-8`}>
               <div>
                 <h2 className={`text-2xl font-bold ${textPrimary} mb-2`}>2. Personalize seu Jornal</h2>
                 <p className={textSecondary}>Configure o visual do jornal consolidado (Lembrando suas últimas escolhas)</p>
@@ -298,23 +302,23 @@ export default function CardGenerator() {
               <div className="grid md:grid-cols-2 gap-8">
                 <div className="space-y-6">
                   <div className="space-y-3">
-                    <Label className={`flex items-center space-x-2 ${textPrimary}`}>
+                    <Label className={`flex items-center space-x-2 font-semibold ${textPrimary}`}>
                       <Layout className="w-4 h-4" />
                       <span>Cabeçalho (Header)</span>
                     </Label>
                     <div 
                       onClick={() => document.getElementById("header-input")?.click()}
-                      className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-all ${uploadBg} ${headerFile ? 'border-green-500' : borderColor}`}
+                      className={`border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-all ${uploadBg} ${headerFile ? 'border-blue-400' : borderColor}`}
                     >
                       {headerFile ? (
                         <div className="flex items-center justify-center space-x-2">
-                          <ImageIcon className="w-4 h-4 text-green-500" />
-                          <span className={`text-sm truncate max-w-[150px] ${textPrimary}`}>{headerFile.name}</span>
+                          <ImageIcon className="w-4 h-4 text-blue-400" />
+                          <span className={`text-sm truncate max-w-[150px] font-medium ${textPrimary}`}>{headerFile.name}</span>
                         </div>
                       ) : (
                         <div className="flex flex-col items-center space-y-1">
                           <Upload className={`w-5 h-5 ${textSecondary}`} />
-                          <span className={`text-xs ${textSecondary}`}>
+                          <span className={`text-xs font-medium ${textSecondary}`}>
                             {lastHeaderName ? `Último: ${lastHeaderName}` : "Subir imagem (PDF, PNG, JPG)"}
                           </span>
                         </div>
@@ -324,7 +328,7 @@ export default function CardGenerator() {
                   </div>
 
                   <div className="space-y-3">
-                    <Label className={`flex items-center space-x-2 ${textPrimary}`}>
+                    <Label className={`flex items-center space-x-2 font-semibold ${textPrimary}`}>
                       <Palette className="w-4 h-4" />
                       <span>Cor de Fundo</span>
                     </Label>
@@ -333,19 +337,19 @@ export default function CardGenerator() {
                         type="color" 
                         value={bgColor} 
                         onChange={(e) => setBgColor(e.target.value)}
-                        className="w-12 h-12 rounded cursor-pointer border-0 p-0 bg-transparent"
+                        className="w-12 h-12 rounded-lg cursor-pointer border-0 p-0 bg-transparent overflow-hidden"
                       />
                       <Input 
                         value={bgColor} 
                         onChange={(e) => setBgColor(e.target.value)}
                         placeholder="#000000"
-                        className={`font-mono ${isDark ? 'bg-black/20 border-white/20 text-white' : 'bg-white border-slate-300'}`}
+                        className={`font-mono rounded-lg ${isDark ? 'bg-blue-900/30 border-blue-500/20 text-white' : 'bg-white border-blue-200'}`}
                       />
                     </div>
                   </div>
 
                   <div className="space-y-3">
-                    <Label className={`flex items-center space-x-2 ${textPrimary}`}>
+                    <Label className={`flex items-center space-x-2 font-semibold ${textPrimary}`}>
                       <Palette className="w-4 h-4" />
                       <span>Cor das Categorias</span>
                     </Label>
@@ -354,13 +358,13 @@ export default function CardGenerator() {
                         type="color" 
                         value={categoryBoxColor} 
                         onChange={(e) => setCategoryBoxColor(e.target.value)}
-                        className="w-12 h-12 rounded cursor-pointer border-0 p-0 bg-transparent"
+                        className="w-12 h-12 rounded-lg cursor-pointer border-0 p-0 bg-transparent overflow-hidden"
                       />
                       <Input 
                         value={categoryBoxColor} 
                         onChange={(e) => setCategoryBoxColor(e.target.value)}
-                        placeholder="#1f7a3f"
-                        className={`font-mono ${isDark ? 'bg-black/20 border-white/20 text-white' : 'bg-white border-slate-300'}`}
+                        placeholder="#2563eb"
+                        className={`font-mono rounded-lg ${isDark ? 'bg-blue-900/30 border-blue-500/20 text-white' : 'bg-white border-blue-200'}`}
                       />
                     </div>
                   </div>
@@ -368,7 +372,7 @@ export default function CardGenerator() {
 
                 <div className="space-y-6">
                   <div className="space-y-3">
-                    <Label className={`flex items-center space-x-2 ${textPrimary}`}>
+                    <Label className={`flex items-center space-x-2 font-semibold ${textPrimary}`}>
                       <Type className="w-4 h-4" />
                       <span>Texto do Rodapé</span>
                     </Label>
@@ -376,9 +380,9 @@ export default function CardGenerator() {
                       value={footerText}
                       onChange={(e) => setFooterText(e.target.value)}
                       placeholder="Deixe em branco para o padrão..."
-                      className={`min-h-[115px] resize-none ${isDark ? 'bg-black/20 border-white/20 text-white' : 'bg-white border-slate-300'}`}
+                      className={`min-h-[115px] resize-none rounded-xl ${isDark ? 'bg-blue-900/30 border-blue-500/20 text-white' : 'bg-white border-blue-200'}`}
                     />
-                    <p className={`text-[10px] ${textSecondary}`}>O sistema ajustará automaticamente a cor (preto/branco) para melhor contraste.</p>
+                    <p className={`text-[10px] font-medium ${textSecondary}`}>O sistema ajustará automaticamente a cor (preto/branco) para melhor contraste.</p>
                   </div>
                 </div>
               </div>
@@ -386,38 +390,45 @@ export default function CardGenerator() {
               <Button 
                 onClick={handleGerarJornal} 
                 disabled={!uploadedFilePath || isProcessing}
-                className={`w-full py-8 text-xl font-bold rounded-xl transition-all shadow-lg ${isDark ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700'} text-white disabled:opacity-50`}
+                className={`w-full py-8 text-xl font-black rounded-2xl transition-all shadow-xl ${isDark ? 'bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-500 hover:to-indigo-600' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700'} text-white disabled:opacity-50`}
               >
-                {uploadedFilePath ? "Gerar Jornal de Ofertas PDF" : "Processe a planilha primeiro"}
+                {uploadedFilePath ? "GERAR JORNAL PDF" : "PROCESSE A PLANILHA PRIMEIRO"}
               </Button>
             </div>
           </div>
 
           <div className="space-y-6">
-            <div className={`${cardBg} rounded-2xl p-6 border ${borderColor}`}>
+            <div className={`${cardBg} rounded-3xl p-6 border ${borderColor} shadow-xl`}>
               <h3 className={`font-bold ${textPrimary} mb-4 flex items-center`}><ImageIcon className={`w-5 h-5 mr-2 ${accentColor}`} /> Modelos Suportados</h3>
               <div className="space-y-3">
                 {["PROMOÇÃO", "QUEDA DE PREÇO", "CUPOM", "CASHBACK", "BC"].map((tipo, i) => (
-                  <div key={i} className={`flex items-center justify-between p-3 rounded-lg ${isDark ? 'bg-black/20' : 'bg-white/50'} border ${borderColor}`}>
-                    <span className={`text-sm font-medium ${textPrimary}`}>{tipo}</span>
-                    <CheckCircle2 className="w-4 h-4 text-green-500" />
+                  <div key={i} className={`flex items-center justify-between p-3 rounded-xl ${isDark ? 'bg-blue-500/5' : 'bg-blue-50/50'} border ${borderColor}`}>
+                    <span className={`text-sm font-bold ${textPrimary}`}>{tipo}</span>
+                    <CheckCircle2 className="w-4 h-4 text-blue-400" />
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className={`${cardBg} rounded-2xl p-6 border ${borderColor}`}>
-              <h3 className={`font-bold ${textPrimary} mb-4 flex items-center`}><FileText className={`w-5 h-5 mr-2 ${accentColor}`} /> Dicas</h3>
-              <ul className={`text-sm ${textSecondary} space-y-3`}>
-                <li className="flex items-start"><span className={`${accentColor} mr-2 font-bold`}>•</span> Use nomes de logos que já existem no sistema.</li>
-                <li className="flex items-start"><span className={`${accentColor} mr-2 font-bold`}>•</span> A coluna 'categoria' agrupa os cards no jornal.</li>
-                <li className="flex items-start"><span className={`${accentColor} mr-2 font-bold`}>•</span> O valor da promoção agora se ajusta automaticamente.</li>
-                <li className="flex items-start"><span className={`${accentColor} mr-2 font-bold`}>•</span> Customize as cores para combinar com sua marca.</li>
+            <div className={`${cardBg} rounded-3xl p-6 border ${borderColor} shadow-xl`}>
+              <h3 className={`font-bold ${textPrimary} mb-4 flex items-center`}><FileText className={`w-5 h-5 mr-2 ${accentColor}`} /> Dicas de Uso</h3>
+              <ul className={`text-sm font-medium ${textSecondary} space-y-4`}>
+                <li className="flex items-start"><span className={`${accentColor} mr-2 font-black`}>•</span> Use nomes de logos que já existem no sistema para correta exibição.</li>
+                <li className="flex items-start"><span className={`${accentColor} mr-2 font-black`}>•</span> A coluna 'categoria' agrupa os cards no jornal automaticamente.</li>
+                <li className="flex items-start"><span className={`${accentColor} mr-2 font-black`}>•</span> O valor da promoção agora se ajusta dinamicamente ao espaço.</li>
+                <li className="flex items-start"><span className={`${accentColor} mr-2 font-black`}>•</span> Customize as cores para combinar com a identidade da sua campanha.</li>
               </ul>
             </div>
           </div>
         </div>
       </div>
+      
+      {/* NOVO RODAPÉ DE AUTORIA */}
+      <footer className="mt-12 py-8 border-t border-blue-500/10 text-center">
+        <p className={`text-sm font-bold tracking-widest ${textSecondary}`}>
+          DESENVOLVIDO POR <span className={accentColor}>ESIO LIMA</span> — VERSÃO 3.0
+        </p>
+      </footer>
     </div>
   );
 }
