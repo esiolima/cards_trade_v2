@@ -26,10 +26,10 @@ const fileFilter = (
   file: Express.Multer.File,
   cb: multer.FileFilterCallback
 ) => {
-  // Validate file type
-  const allowedMimes = ["image/png", "image/jpeg", "image/jpg"];
+  // Validate file type - Adicionado image/svg+xml
+  const allowedMimes = ["image/png", "image/jpeg", "image/jpg", "image/webp", "image/svg+xml"];
   if (!allowedMimes.includes(file.mimetype)) {
-    cb(new Error("Apenas arquivos PNG, JPG e JPEG são permitidos"));
+    cb(new Error("Apenas arquivos PNG, JPG, JPEG, WEBP e SVG são permitidos"));
     return;
   }
 
@@ -51,7 +51,19 @@ const upload = multer({
 });
 
 export function setupLogoUploadRoute(app: express.Express) {
-  app.post("/api/logo/upload", upload.single("file"), (req, res) => {
+  // Rota de Upload com suporte a substituição (overwrite)
+  app.post("/api/logo/upload", (req, res, next) => {
+    const fileName = req.headers['x-file-name'] as string;
+    const overwrite = req.headers['x-overwrite'] === 'true';
+
+    if (fileName && !overwrite && fs.existsSync(path.join(LOGOS_DIR, fileName))) {
+      return res.status(409).json({ 
+        error: "CONFLITO", 
+        message: `O arquivo "${fileName}" já existe. Deseja substituir?` 
+      });
+    }
+    next();
+  }, upload.single("file"), (req, res) => {
     if (!req.file) {
       return res.status(400).json({ error: "Nenhum arquivo foi enviado" });
     }
@@ -62,6 +74,23 @@ export function setupLogoUploadRoute(app: express.Express) {
       filename: req.file.originalname,
       path: `/logos/${req.file.originalname}`,
     });
+  });
+
+  // Rota de Deleção de Logo
+  app.delete("/api/logos/:name", (req, res) => {
+    const logoName = req.params.name;
+    const filePath = path.join(LOGOS_DIR, logoName);
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: "Arquivo não encontrado" });
+    }
+
+    try {
+      fs.unlinkSync(filePath);
+      res.json({ success: true, message: `Logo "${logoName}" excluída com sucesso` });
+    } catch (err) {
+      res.status(500).json({ error: "Erro ao excluir o arquivo" });
+    }
   });
 
   // Serve logos directory as static files

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Upload, AlertCircle, CheckCircle2, ArrowLeft, Sun, Moon, Trash2 } from "lucide-react";
+import { Upload, AlertCircle, CheckCircle2, ArrowLeft, Sun, Moon, Trash2, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import { useLocation } from "wouter";
@@ -28,12 +28,9 @@ export default function LogoManager() {
     }
   }, [logosData]);
 
-  // ===============================
-  // DELETE LOGO (mantendo tRPC)
-  // ===============================
   const handleDelete = async (logoName: string) => {
     const confirmDelete = window.confirm(
-      `Deseja realmente excluir ${logoName}?`
+      `Deseja realmente excluir "${logoName}"? Esta ação não pode ser desfeita.`
     );
 
     if (!confirmDelete) return;
@@ -44,8 +41,8 @@ export default function LogoManager() {
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        setError(error.error || "Erro ao excluir logo");
+        const errorData = await response.json();
+        setError(errorData.error || "Erro ao excluir logo");
         return;
       }
 
@@ -56,11 +53,12 @@ export default function LogoManager() {
     }
   };
 
-  const handleFileSelect = async (file: File | null | undefined) => {
+  const handleFileSelect = async (file: File | null | undefined, overwrite = false) => {
     if (!file) return;
 
-    if (!["image/png", "image/jpeg", "image/jpg"].includes(file.type)) {
-      setError("Apenas PNG, JPG e JPEG são permitidos");
+    const allowedTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp", "image/svg+xml"];
+    if (!allowedTypes.includes(file.type)) {
+      setError("Apenas PNG, JPG, JPEG, WEBP e SVG são permitidos");
       return;
     }
 
@@ -75,18 +73,34 @@ export default function LogoManager() {
 
     try {
       const formData = new FormData();
-      formData.append("logo", file);
+      formData.append("file", file);
 
-      const response = await fetch("/api/upload-logo", {
+      const response = await fetch("/api/logo/upload", {
         method: "POST",
+        headers: {
+          'x-file-name': file.name,
+          'x-overwrite': overwrite ? 'true' : 'false'
+        },
         body: formData,
       });
+
+      if (response.status === 409) {
+        const confirmOverwrite = window.confirm(
+          `O arquivo "${file.name}" já existe. Deseja substituí-lo pela nova versão?`
+        );
+        if (confirmOverwrite) {
+          return handleFileSelect(file, true);
+        } else {
+          setIsLoading(false);
+          return;
+        }
+      }
 
       if (!response.ok) {
         throw new Error("Erro ao enviar logo");
       }
 
-      setSuccess(`Logo "${file.name}" enviada com sucesso!`);
+      setSuccess(`Logo "${file.name}" ${overwrite ? 'substituída' : 'enviada'} com sucesso!`);
       refetch();
 
       if (fileInputRef.current) {
@@ -136,7 +150,7 @@ export default function LogoManager() {
 
   return (
     <div className={`min-h-screen w-full py-12 px-4 sm:px-6 lg:px-8 transition-colors duration-500 ${bgColor}`}>
-      <div className="max-w-5xl mx-auto space-y-8">
+      <div className="max-w-6xl mx-auto space-y-8">
         
         <div className="flex items-center justify-between">
           <Button
@@ -152,16 +166,22 @@ export default function LogoManager() {
             Voltar para Home
           </Button>
 
-          <button
-            onClick={() => setIsDark(!isDark)}
-            className={`p-3 rounded-full transition-all duration-300 backdrop-blur-sm ${
-              isDark 
-                ? "bg-white/10 hover:bg-white/20 text-yellow-400" 
-                : "bg-black/10 hover:bg-black/20 text-slate-700"
-            }`}
-          >
-            {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-          </button>
+          <div className="flex items-center gap-4">
+            <div className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-medium ${isDark ? 'bg-blue-500/20 text-blue-300' : 'bg-blue-100 text-blue-700'}`}>
+              <HelpCircle className="w-4 h-4" />
+              Dica: O sistema aceita PNG, JPG, WEBP e SVG
+            </div>
+            <button
+              onClick={() => setIsDark(!isDark)}
+              className={`p-3 rounded-full transition-all duration-300 backdrop-blur-sm ${
+                isDark 
+                  ? "bg-white/10 hover:bg-white/20 text-yellow-400" 
+                  : "bg-black/10 hover:bg-black/20 text-slate-700"
+              }`}
+            >
+              {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            </button>
+          </div>
         </div>
 
         <div className={`p-8 rounded-2xl shadow-2xl ${cardBg}`}>
@@ -192,7 +212,7 @@ export default function LogoManager() {
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/png,image/jpeg,image/jpg"
+              accept="image/png,image/jpeg,image/jpg,image/webp,image/svg+xml"
               onChange={handleInputChange}
               className="hidden"
               disabled={isLoading}
@@ -215,37 +235,53 @@ export default function LogoManager() {
         </div>
 
         <div className={`p-8 rounded-2xl shadow-2xl ${cardBg}`}>
-          <h3 className={`text-xl font-bold ${textPrimary} mb-4`}>
-            Logos Disponíveis
-          </h3>
+          <div className="flex items-center justify-between mb-6">
+            <h3 className={`text-xl font-bold ${textPrimary}`}>
+              Logos Disponíveis
+            </h3>
+            <span className={`text-xs font-medium px-3 py-1 rounded-full ${isDark ? 'bg-white/5 text-slate-400' : 'bg-black/5 text-slate-500'}`}>
+              {logos.filter(logo => logo.name !== "blank.png").length} arquivos
+            </span>
+          </div>
 
           {logos.filter(logo => logo.name !== "blank.png").length === 0 ? (
-            <p className={textSecondary}>Nenhum logo disponível</p>
+            <div className="text-center py-12">
+              <p className={textSecondary}>Nenhum logo disponível na pasta /logos</p>
+            </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
               {logos
                 .filter(logo => logo.name !== "blank.png")
                 .map((logo) => (
                   <div
                     key={logo.name}
-                    className={`relative rounded-lg p-4 transition-all duration-300 border group ${isDark ? 'bg-black/20 border-white/10 hover:bg-black/30' : 'bg-black/5 border-slate-400/20 hover:bg-black/10'}`}
+                    className={`relative rounded-xl p-4 transition-all duration-300 border group flex flex-col items-center ${isDark ? 'bg-black/20 border-white/10 hover:bg-black/40 hover:border-white/30' : 'bg-white/40 border-slate-200 hover:bg-white/60 hover:border-blue-300'}`}
                   >
                     <button
                       onClick={() => handleDelete(logo.name)}
-                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-all duration-200"
+                      title="Excluir logo"
+                      className="absolute top-2 right-2 p-2 rounded-full bg-red-500/10 text-red-500 opacity-0 group-hover:opacity-100 hover:bg-red-500 hover:text-white transition-all duration-200 z-10"
                     >
-                      <Trash2 className={`w-4 h-4 ${isDark ? "text-red-400" : "text-red-600"}`} />
+                      <Trash2 className="w-4 h-4" />
                     </button>
 
-                    <img
-                      src={`/logos/${logo.name}`}
-                      alt={logo.name}
-                      className="w-full h-32 object-contain mb-2"
-                      onError={(e) => { (e.target as HTMLImageElement).src = "/logos/blank.png"; }}
-                    />
-                    <p className={`text-sm truncate ${textSecondary}`}>
-                      {logo.name}
-                    </p>
+                    <div className="w-full h-32 flex items-center justify-center mb-3 bg-white/5 rounded-lg overflow-hidden">
+                      <img
+                        src={`/logos/${logo.name}`}
+                        alt={logo.name}
+                        className="max-w-full max-h-full object-contain p-2"
+                        onError={(e) => { (e.target as HTMLImageElement).src = "/logos/blank.png"; }}
+                      />
+                    </div>
+                    
+                    <div className="w-full text-center">
+                      <p className={`text-xs font-medium truncate w-full px-1 ${textPrimary}`} title={logo.name}>
+                        {logo.name}
+                      </p>
+                      <p className={`text-[10px] uppercase mt-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                        {logo.name.split('.').pop()}
+                      </p>
+                    </div>
                   </div>
                 ))}
             </div>
