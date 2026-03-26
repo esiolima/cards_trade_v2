@@ -87,7 +87,7 @@ body {
 }
 
 .tarja {
-  background: #1a7d00;
+  background: #ff8c00; /* Laranja conforme solicitado */
   color: #ffffff;
   font-weight: 700;
   font-size: 42px;
@@ -109,13 +109,11 @@ body {
 }
 
 .texto-topo {
-  font-size: 50px;
-  line-height: 1.1;
+  font-size: 26px; /* Ajustado para ser idêntico ao queda.html */
+  line-height: 1.2;
   max-width: 560px;
-  height: 120px;
   text-align: center;
   word-break: break-word;
-  overflow: hidden;
 }
 
 /* VALOR DINÂMICO */
@@ -137,19 +135,17 @@ body {
   width: 100%;
 }
 
+/* "DE DESCONTO" removido conforme solicitado */
 .desconto {
-  font-size: 44px;
-  font-weight: 700;
+  display: none;
 }
 
 .complemento {
-  font-size: 36px;
-  line-height: 1.1;
+  font-size: 24px; /* Ajustado para ser idêntico ao queda.html */
+  line-height: 1.2;
   max-width: 560px;
-  height: 100px;
   text-align: center;
   word-break: break-word;
-  overflow: hidden;
 }
 
 .legal {
@@ -194,7 +190,7 @@ body {
     </div>
 
     <div class="tarja">
-      OFERTA ESPECIAL
+      PROMOÇÃO
     </div>
   </div>
 
@@ -210,15 +206,11 @@ body {
       </div>
     </div>
 
-    <div class="desconto">
-      DE DESCONTO
-    </div>
-
     <div class="complemento" id="complemento">
       {{COMPLEMENTO}}
     </div>
 
-    <div class="legal">
+    <div class="legal" id="legal">
       {{LEGAL}}
     </div>
 
@@ -238,13 +230,16 @@ body {
 <script>
 window.addEventListener("load", function () {
 
-  function autoFit(el, max = 60, min = 16, maxLines = 100) {
+  function autoFit(el, max = 60, min = 16) {
     let size = max;
     el.style.fontSize = size + "px";
     el.style.lineHeight = "0.9";
 
     const containerHeight = el.parentElement.clientHeight;
     const containerWidth = el.parentElement.clientWidth;
+
+    // Se o elemento não tiver conteúdo, não faz nada
+    if (!el.innerText.trim()) return;
 
     while (
       (el.scrollHeight > containerHeight || el.scrollWidth > containerWidth) &&
@@ -255,9 +250,6 @@ window.addEventListener("load", function () {
     }
   }
 
-  autoFit(document.getElementById("texto-topo"), 50, 18);
-  autoFit(document.getElementById("complemento"), 36, 16);
-  
   // Ajuste dinâmico para o valor em até 3 linhas
   const valorEl = document.getElementById("valor-texto");
   autoFit(valorEl, 260, 80);
