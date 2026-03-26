@@ -22,7 +22,6 @@ export class CardGenerator extends EventEmitter {
     if (!fs.existsSync(TMP_DIR))
       fs.mkdirSync(TMP_DIR, { recursive: true });
 
-    // Lançar o browser uma única vez e mantê-lo aberto
     if (!this.browser) {
       this.browser = await puppeteer.launch({
         executablePath:
@@ -35,7 +34,6 @@ export class CardGenerator extends EventEmitter {
           "--disable-gpu",
           "--no-first-run",
           "--no-zygote"
-          // Removido --single-process e limites de memória para aproveitar os 8GB de RAM
         ],
         headless: true,
       });
@@ -107,15 +105,12 @@ export class CardGenerator extends EventEmitter {
     const total = rows.length;
     let processed = 0;
 
-    // Limpar output antigo
     fs.readdirSync(OUTPUT_DIR).forEach((file) => {
       if (file.endsWith(".pdf") || file.endsWith(".zip")) {
         try { fs.unlinkSync(path.join(OUTPUT_DIR, file)); } catch(e) {}
       }
     });
 
-    // Agora podemos processar em pequenos lotes (paralelo) para ser muito mais rápido
-    // Usaremos lotes de 5 cards simultâneos para aproveitar os 8 vCPUs
     const BATCH_SIZE = 5;
     for (let i = 0; i < rows.length; i += BATCH_SIZE) {
       const batch = rows.slice(i, i + BATCH_SIZE);
@@ -191,6 +186,27 @@ export class CardGenerator extends EventEmitter {
     return cards;
   }
 
+  async generateZip(): Promise<string> {
+    const date = this.getDateStamp();
+    const zipPath = path.join(OUTPUT_DIR, `cards_${date}.zip`);
+    const output = fs.createWriteStream(zipPath);
+    const archive = archiver("zip", { zlib: { level: 9 } });
+
+    return new Promise((resolve, reject) => {
+      output.on("close", () => resolve(zipPath));
+      archive.on("error", (err) => reject(err));
+      archive.pipe(output);
+
+      fs.readdirSync(OUTPUT_DIR).forEach((file) => {
+        if (file.endsWith(".pdf") && !file.includes("jornal_ofertas")) {
+          archive.file(path.join(OUTPUT_DIR, file), { name: file });
+        }
+      });
+
+      archive.finalize();
+    });
+  }
+
   private getContrastColor(hexColor: string): string {
     if (!hexColor || !hexColor.startsWith('#')) return '#ffffff';
     const r = parseInt(hexColor.slice(1, 3), 16);
@@ -203,9 +219,8 @@ export class CardGenerator extends EventEmitter {
   async generateJornal(options: { headerPath?: string, backgroundColor?: string, categoryBoxColor?: string, footerText?: string } = {}): Promise<string> {
     await this.initialize();
     
-    const excelFiles = fs.readdirSync(path.join(BASE_DIR, "uploads"));
-    if (excelFiles.length === 0) throw new Error("Nenhuma planilha encontrada para gerar o jornal");
-    const excelFilePath = path.join(BASE_DIR, "uploads", excelFiles[0]);
+    const excelFilePath = path.join(process.cwd(), "uploads_excel", "current_planilha.xlsx");
+    if (!fs.existsSync(excelFilePath)) throw new Error("Nenhuma planilha encontrada. Por favor, processe a planilha no Passo 1 primeiro.");
 
     const { backgroundColor = "#1a365d", categoryBoxColor = "#2563eb", footerText } = options;
     const contrastColor = this.getContrastColor(backgroundColor);
@@ -257,7 +272,13 @@ export class CardGenerator extends EventEmitter {
         const logoBase64 = this.imageToBase64(path.join(LOGOS_DIR, logoFile));
         const seloBase64 = row.selo ? this.imageToBase64(path.join(SELOS_DIR, row.selo.toLowerCase() === "nova" ? "acaonova.png" : row.selo.toLowerCase() === "renovada" ? "acaorenovada.png" : "")) : "";
         const segmentoRaw = row.segmento && String(row.segmento).trim() !== "" ? String(row.segmento).trim() : "";
-        cardHtml = cardHtml.replaceAll("{{TEXTO}}", String(row.texto ?? "")).replaceAll("{{VALOR}}", valorFinal).replaceAll("{{COMPLEMENTO}}", String(row.complemento ?? "")).replaceAll("{{LEGAL}}", String(row.legal ?? "")).replaceAll("{{SEGMENTO}}", segmentoRaw).replaceAll("{{CUPOM}}", String(row.cupom ?? "")).replaceAll("{{UF}}", row.uf ? `UF: ${row.uf}` : "").replaceAll("{{URN}}", row.urn ? `URN: ${row.urn}` : "").replaceAll("{{LOGO}}", logoBase64).replaceAll("{{SELO}}", seloBase64);
+        cardHtml = cardHtml.replaceAll("{{TEXTO}}", String(row.texto ?? "")).replaceAll("{{VALOR}}", valorFinal).replaceAll("{{COMPLEMENTO}}", String(row.complemento ?? "")).replaceAll("{{LEGAL}}", String(row.legal ?? ""))
+          .replaceAll("{{SEGMENTO}}", segmentoRaw)
+          .replaceAll("{{CUPOM}}", String(row.cupom ?? ""))
+          .replaceAll("{{UF}}", row.uf ? `UF: ${row.uf}` : "")
+          .replaceAll("{{URN}}", row.urn ? `URN: ${row.urn}` : "")
+          .replaceAll("{{LOGO}}", logoBase64)
+          .replaceAll("{{SELO}}", seloBase64);
         html += `<div class="card-wrapper"><iframe class="card-iframe" srcdoc="${cardHtml.replace(/"/g, "&quot;")}"></iframe></div>`;
       }
       html += `</div></div>`;
@@ -272,7 +293,7 @@ export class CardGenerator extends EventEmitter {
     try {
       await page.setViewport({ width: pageWidth, height: 2000 });
       await page.goto(`file://${jornalHtmlPath}`, { waitUntil: "networkidle0", timeout: 120000 });
-      const jornalPdfPath = path.join(OUTPUT_DIR, `jornal_ofertas_${this.getDateStamp()}.pdf`);
+      const jornalPdfPath = path.join(OUTPUT_DIR, `jornal_ofertas.pdf`);
       await page.pdf({ path: jornalPdfPath, width: `${pageWidth}px`, height: "auto", printBackground: true, margin: { top: "0px", right: "0px", bottom: "0px", left: "0px" } });
       return jornalPdfPath;
     } finally {

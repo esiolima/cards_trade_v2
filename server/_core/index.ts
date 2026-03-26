@@ -8,61 +8,47 @@ import net from "net";
 import path from "path";
 import fs from "fs";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
-import { Server as SocketIOServer } from "socket.io";
-import { registerOAuthRoutes } from "./oauth";
-import { appRouter } from "../routers";
+import { appRouter } from "../routers/_app";
 import { createContext } from "./context";
-import { serveStatic, setupVite } from "./vite";
-import { setupUploadRoute } from "../uploadHandler";
-import { setupLogoUploadRoute } from "../logoUploadHandler";
+import { Server as SocketIOServer } from "socket.io";
 
-// ✅ IMPORT NOVO
-import { renderJornalTeste } from "./jornalTeste";
-
-function isPortAvailable(port: number): Promise<boolean> {
-  return new Promise(resolve => {
+async function findAvailablePort(startPort: number): Promise<number> {
+  return new Promise((resolve) => {
     const server = net.createServer();
-    server.listen(port, () => {
-      server.close(() => resolve(true));
+    server.listen(startPort, () => {
+      const { port } = server.address() as net.AddressInfo;
+      server.close(() => resolve(port));
     });
-    server.on("error", () => resolve(false));
+    server.on("error", () => resolve(findAvailablePort(startPort + 1)));
   });
-}
-
-async function findAvailablePort(startPort: number = 3000): Promise<number> {
-  for (let port = startPort; port < startPort + 20; port++) {
-    if (await isPortAvailable(port)) {
-      return port;
-    }
-  }
-  throw new Error(`No available port found starting from ${startPort}`);
 }
 
 async function startServer() {
   const app = express();
   const server = createServer(app);
 
-  // Habilitar CORS para todas as origens no Express
   app.use(cors({
     origin: "*",
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"]
   }));
 
-  // Configurar multer para upload de arquivos
   const upload = multer({ dest: "uploads/" });
+  const generator = new CardGenerator();
+  await generator.initialize();
 
-  // Rota de API tradicional para processamento de planilha (Alternativa ao tRPC)
+  // Rota de API tradicional para processamento de planilha
   app.post("/api/process-excel", upload.single("file"), async (req, res) => {
     try {
-      if (!req.file) {
-        return res.status(400).json({ error: "Nenhum arquivo enviado" });
-      }
+      if (!req.file) return res.status(400).json({ error: "Nenhum arquivo enviado" });
 
-      const generator = new CardGenerator();
+      const uploadsDir = path.join(process.cwd(), "uploads_excel");
+      if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+
+      const permanentPath = path.join(uploadsDir, "current_planilha.xlsx");
+      fs.copyFileSync(req.file.path, permanentPath);
+
       const cards = await generator.processExcel(req.file.path);
-      
-      // Limpar arquivo temporário
       fs.unlinkSync(req.file.path);
       
       res.json({ cards });
@@ -72,13 +58,22 @@ async function startServer() {
     }
   });
 
-  // Rota de API tradicional para gerar o jornal (Alternativa ao tRPC)
+  // Rota para download do ZIP
+  app.get("/api/download-zip", async (req, res) => {
+    try {
+      const zipPath = await generator.generateZip();
+      res.download(zipPath, "cards_individuais.zip");
+    } catch (error: any) {
+      res.status(500).json({ error: "Erro ao gerar ZIP" });
+    }
+  });
+
+  // Rota para gerar o jornal consolidado
   app.post("/api/generate-jornal", upload.single("header"), async (req, res) => {
     try {
       const { backgroundColor, categoryBoxColor, footerText } = req.body;
       const headerPath = req.file ? req.file.path : undefined;
 
-      const generator = new CardGenerator();
       const pdfPath = await generator.generateJornal({
         headerPath,
         backgroundColor,
@@ -86,11 +81,8 @@ async function startServer() {
         footerText
       });
 
-      // Enviar o arquivo PDF e depois deletar o arquivo temporário do header se existir
       res.download(pdfPath, "jornal_ofertas.pdf", (err) => {
-        if (headerPath && fs.existsSync(headerPath)) {
-          fs.unlinkSync(headerPath);
-        }
+        if (headerPath && fs.existsSync(headerPath)) fs.unlinkSync(headerPath);
       });
     } catch (error: any) {
       console.error("Erro na geração do jornal:", error);
@@ -99,87 +91,28 @@ async function startServer() {
   });
 
   const io = new SocketIOServer(server, {
-    cors: {
-      origin: "*",
-      methods: ["GET", "POST"],
-    },
+    cors: { origin: "*", methods: ["GET", "POST"] },
+    path: "/socket.io"
   });
 
-  // Configure body parser
-  app.use(express.json({ limit: "50mb" }));
-  app.use(express.urlencoded({ limit: "50mb", extended: true }));
+  generator.on("progress", (data) => {
+    io.emit("processProgress", data);
+  });
 
-  // OAuth
-  registerOAuthRoutes(app);
+  app.use("/api/trpc", createExpressMiddleware({ router: appRouter, createContext }));
 
-  // tRPC API
-  app.use(
-    "/api/trpc",
-    createExpressMiddleware({
-      router: appRouter,
-      createContext: async (opts) => createContext(opts, io),
-    })
-  );
-
-  // Socket.io
-  io.on("connection", (socket) => {
-    console.log(`Client connected: ${socket.id}`);
-
-    socket.on("join", (sessionId: string) => {
-      socket.join(sessionId);
-      console.log(`Client ${socket.id} joined session ${sessionId}`);
+  if (process.env.NODE_ENV === "production") {
+    const clientDistPath = path.join(process.cwd(), "dist", "client");
+    app.use(express.static(clientDistPath));
+    app.get("*", (req, res) => {
+      if (req.path.startsWith("/api/")) return res.status(404).end();
+      res.sendFile(path.join(clientDistPath, "index.html"));
     });
-
-    socket.on("disconnect", () => {
-      console.log(`Client disconnected: ${socket.id}`);
-    });
-  });
-
-  // Uploads
-  setupUploadRoute(app);
-  setupLogoUploadRoute(app);
-
-  // ✅ NOVA ROTA DE TESTE
-  app.get("/teste-jornal", (req, res) => {
-    const html = renderJornalTeste();
-    res.send(html);
-  });
-
-  // Frontend (Vite ou build)
-  if (process.env.NODE_ENV === "development") {
-    await setupVite(app, server);
-  } else {
-    serveStatic(app);
   }
 
-  // Cleanup
-  const uploadsDir = path.resolve("uploads");
-  const outputDir = path.resolve("output");
-  const tmpDir = path.resolve("tmp");
-
-  for (const dir of [uploadsDir, outputDir, tmpDir]) {
-    if (fs.existsSync(dir)) {
-      const files = fs.readdirSync(dir);
-      for (const file of files) {
-        try {
-          fs.unlinkSync(path.join(dir, file));
-        } catch (e) {
-          // ignore
-        }
-      }
-    }
-  }
-
-  const preferredPort = parseInt(process.env.PORT || "8080");
-  const port = await findAvailablePort(preferredPort);
-
-  if (port !== preferredPort) {
-    console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
-  }
-
-  server.listen(port, () => {
-    console.log(`Server running on http://localhost:${port}/`);
-    console.log(`Socket.io ready for real-time updates`);
+  const port = Number(process.env.PORT) || 8080;
+  server.listen(port, "0.0.0.0", () => {
+    console.log(`Servidor rodando na porta ${port}`);
   });
 }
 
