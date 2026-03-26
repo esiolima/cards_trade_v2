@@ -258,7 +258,7 @@ window.addEventListener("load", function () {
   const segmento = document.getElementById("segmento-bloco");
   const valorSegmento = "{{SEGMENTO}}".trim();
 
-  if (!valorSegmento && segmento) {
+  if ((!valorSegmento || valorSegmento === "{{SEGMENTO}}") && segmento) {
     segmento.style.display = "none";
   }
 
@@ -267,7 +267,7 @@ window.addEventListener("load", function () {
   const seloImg = document.getElementById("selo-img");
   const valorSelo = "{{SELO}}".trim();
 
-  if (valorSelo) {
+  if (valorSelo && valorSelo !== "{{SELO}}") {
     seloImg.src = valorSelo;
     seloContainer.style.display = "block";
   }
