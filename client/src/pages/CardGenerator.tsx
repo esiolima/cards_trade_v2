@@ -33,6 +33,7 @@ export default function CardGenerator() {
   const [file, setFile] = useState<File | null>(null);
   const [headerFile, setHeaderFile] = useState<File | null>(null);
   const [bgColor, setBgColor] = useState("#5a2d0c");
+  const [categoryBoxColor, setCategoryBoxColor] = useState("#1f7a3f");
   const [footerText, setFooterText] = useState("");
   
   const [isProcessing, setIsProcessing] = useState(false);
@@ -134,6 +135,7 @@ export default function CardGenerator() {
         sessionId,
         headerPath,
         backgroundColor: bgColor,
+        categoryBoxColor,
         footerText: footerText || undefined
       });
 
@@ -316,6 +318,27 @@ export default function CardGenerator() {
                         />
                       </div>
                     </div>
+
+                    <div className="space-y-3">
+                      <Label className={`flex items-center space-x-2 ${textPrimary}`}>
+                        <Palette className="w-4 h-4" />
+                        <span>Cor das Categorias</span>
+                      </Label>
+                      <div className="flex items-center space-x-3">
+                        <input 
+                          type="color" 
+                          value={categoryBoxColor} 
+                          onChange={(e) => setCategoryBoxColor(e.target.value)}
+                          className="w-12 h-12 rounded cursor-pointer border-0 p-0 bg-transparent"
+                        />
+                        <Input 
+                          value={categoryBoxColor} 
+                          onChange={(e) => setCategoryBoxColor(e.target.value)}
+                          placeholder="#1f7a3f"
+                          className={`font-mono ${isDark ? 'bg-black/20 border-white/20 text-white' : 'bg-white border-slate-300'}`}
+                        />
+                      </div>
+                    </div>
                   </div>
 
                   <div className="space-y-6">
@@ -364,6 +387,7 @@ export default function CardGenerator() {
                 <li className="flex items-start"><span className={`${accentColor} mr-2 font-bold`}>•</span> Use nomes de logos que já existem no sistema.</li>
                 <li className="flex items-start"><span className={`${accentColor} mr-2 font-bold`}>•</span> A coluna 'categoria' agrupa os cards no jornal.</li>
                 <li className="flex items-start"><span className={`${accentColor} mr-2 font-bold`}>•</span> O valor da promoção agora se ajusta automaticamente.</li>
+                <li className="flex items-start"><span className={`${accentColor} mr-2 font-bold`}>•</span> Customize as cores para combinar com sua marca.</li>
               </ul>
             </div>
           </div>

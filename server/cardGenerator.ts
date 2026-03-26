@@ -260,10 +260,10 @@ export class CardGenerator extends EventEmitter {
     return yiq >= 128 ? '#000000' : '#ffffff';
   }
 
-  async generateJornal(excelFilePath: string, options: { headerPath?: string, backgroundColor?: string, footerText?: string } = {}): Promise<string> {
+  async generateJornal(excelFilePath: string, options: { headerPath?: string, backgroundColor?: string, categoryBoxColor?: string, footerText?: string } = {}): Promise<string> {
     if (!this.browser) throw new Error("Browser not initialized");
 
-    const { headerPath, backgroundColor = "#5a2d0c", footerText } = options;
+    const { headerPath, backgroundColor = "#5a2d0c", categoryBoxColor = "#1f7a3f", footerText } = options;
     const contrastColor = this.getContrastColor(backgroundColor);
 
     const workbook = xlsx.readFile(excelFilePath);
@@ -334,7 +334,7 @@ export class CardGenerator extends EventEmitter {
         .container { padding: ${gap}px; width: 100%; }
         .categoria-section { margin-bottom: 120px; width: 100%; text-align: center; }
         .tarja-categoria {
-          background: #1f7a3f;
+          background: ${categoryBoxColor};
           color: white;
           padding: 40px 120px;
           border-radius: 999px;
