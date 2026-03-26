@@ -1,6 +1,6 @@
 import path from "path";
 import fs from "fs";
-import puppeteer, { Browser } from "puppeteer-core";
+import puppeteer, { Browser, Page } from "puppeteer-core";
 import archiver from "archiver";
 import xlsx from "xlsx";
 import { EventEmitter } from "events";
@@ -22,66 +22,59 @@ export class CardGenerator extends EventEmitter {
     if (!fs.existsSync(TMP_DIR))
       fs.mkdirSync(TMP_DIR, { recursive: true });
 
-    this.browser = await puppeteer.launch({
-      executablePath:
-        process.env.PUPPETEER_EXECUTABLE_PATH || "/usr/bin/chromium-browser",
-      args: [
-        "--no-sandbox", 
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-        "--disable-accelerated-2d-canvas",
-        "--disable-gpu",
-        "--no-first-run",
-        "--no-zygote",
-        "--single-process"
-      ],
-      headless: true,
-    });
+    // Lançar o browser uma única vez e mantê-lo aberto
+    if (!this.browser) {
+      this.browser = await puppeteer.launch({
+        executablePath:
+          process.env.PUPPETEER_EXECUTABLE_PATH || "/usr/bin/chromium-browser",
+        args: [
+          "--no-sandbox", 
+          "--disable-setuid-sandbox",
+          "--disable-dev-shm-usage",
+          "--disable-accelerated-2d-canvas",
+          "--disable-gpu",
+          "--no-first-run",
+          "--no-zygote"
+          // Removido --single-process e limites de memória para aproveitar os 8GB de RAM
+        ],
+        headless: true,
+      });
+    }
+  }
+
+  async close() {
+    if (this.browser) {
+      await this.browser.close();
+      this.browser = null;
+    }
   }
 
   normalizeType(tipo: string): string {
     if (!tipo) return "";
-
-    const normalized = String(tipo)
-      .toLowerCase()
-      .trim()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "");
-
+    const normalized = String(tipo).toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
     if (normalized.includes("promo")) return "promocao";
     if (normalized.includes("cupom")) return "cupom";
     if (normalized.includes("queda")) return "queda";
     if (normalized.includes("cashback")) return "cashback";
     if (normalized === "bc") return "bc";
-
     return "";
   }
 
   private sanitizeFileName(value: string): string {
-    return value
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^\w\s-]/g, "")
-      .replace(/\s+/g, "-")
-      .toLowerCase()
-      .trim();
+    return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w\s-]/g, "").replace(/\s+/g, "-").toLowerCase().trim();
   }
 
   private getUniqueFilePath(filePath: string): string {
     if (!fs.existsSync(filePath)) return filePath;
-
     const ext = path.extname(filePath);
     const name = path.basename(filePath, ext);
     const dir = path.dirname(filePath);
-
     let counter = 2;
     let newPath = "";
-
     do {
       newPath = path.join(dir, `${name}_v${counter}${ext}`);
       counter++;
     } while (fs.existsSync(newPath));
-
     return newPath;
   }
 
@@ -103,179 +96,118 @@ export class CardGenerator extends EventEmitter {
     return `data:image/${ext};base64,${buffer.toString("base64")}`;
   }
 
-  async generateCards(
-    excelFilePath: string,
-    originalFileName?: string
-  ): Promise<string> {
-    if (!this.browser) throw new Error("Browser not initialized");
-
-    fs.readdirSync(OUTPUT_DIR).forEach((file) => {
-      if (file.endsWith(".pdf") || file.endsWith(".zip")) {
-        fs.unlinkSync(path.join(OUTPUT_DIR, file));
-      }
-    });
-
+  async processExcel(excelFilePath: string): Promise<any[]> {
+    await this.initialize();
+    
     const workbook = xlsx.readFile(excelFilePath);
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const rows: any[] = xlsx.utils.sheet_to_json(sheet, { defval: "" });
-
+    
+    const cards: any[] = [];
     const total = rows.length;
     let processed = 0;
 
-    for (const row of rows) {
-      const tipo = this.normalizeType(row.tipo);
-      if (!tipo) continue;
-
-      const templatePath = path.join(TEMPLATES_DIR, `${tipo}.html`);
-      if (!fs.existsSync(templatePath)) continue;
-
-      let html = fs.readFileSync(templatePath, "utf8");
-
-      let valorFinal = String(row.valor ?? "");
-      if (tipo !== "promocao") {
-        valorFinal = valorFinal.replace(/%/g, "").trim();
-      }
-
-      let logoFile = "blank.png";
-
-      if (row.logo && String(row.logo).trim() !== "") {
-        const possibleLogo = String(row.logo).trim();
-        const possiblePath = path.join(LOGOS_DIR, possibleLogo);
-
-        if (fs.existsSync(possiblePath)) {
-          logoFile = possibleLogo;
-        }
-      }
-
-      const logoBase64 = this.imageToBase64(
-        path.join(LOGOS_DIR, logoFile)
-      );
-
-      const seloBase64 = row.selo
-        ? this.imageToBase64(
-            path.join(
-              SELOS_DIR,
-              row.selo.toLowerCase() === "nova"
-                ? "acaonova.png"
-                : row.selo.toLowerCase() === "renovada"
-                ? "acaorenovada.png"
-                : ""
-            )
-          )
-        : "";
-
-      const segmentoRaw =
-        row.segmento && String(row.segmento).trim() !== ""
-          ? String(row.segmento).trim()
-          : "";
-
-      html = html
-        .replaceAll("{{TEXTO}}", String(row.texto ?? ""))
-        .replaceAll("{{VALOR}}", valorFinal)
-        .replaceAll("{{COMPLEMENTO}}", String(row.complemento ?? ""))
-        .replaceAll("{{LEGAL}}", String(row.legal ?? ""))
-        .replaceAll("{{SEGMENTO}}", segmentoRaw)
-        .replaceAll("{{CUPOM}}", String(row.cupom ?? ""))
-        .replaceAll("{{UF}}", row.uf ? `UF: ${row.uf}` : "")
-        .replaceAll("{{URN}}", row.urn ? `URN: ${row.urn}` : "")
-        .replaceAll("{{LOGO}}", logoBase64)
-        .replaceAll("{{SELO}}", seloBase64);
-
-      const tmpHtmlPath = path.join(TMP_DIR, `card_${processed + 1}.html`);
-      fs.writeFileSync(tmpHtmlPath, html);
-
-      const page = await this.browser.newPage();
-      await page.setViewport({ width: 700, height: 1058 });
-
-      await page.goto(`file://${tmpHtmlPath}`, {
-        waitUntil: "networkidle0",
-        timeout: 60000,
-      });
-
-      const ordemFinal =
-        row.ordem && String(row.ordem).trim() !== ""
-          ? String(row.ordem).trim()
-          : String(processed + 1);
-
-      const categoriaRaw =
-        row.categoria && String(row.categoria).trim() !== ""
-          ? String(row.categoria).trim()
-          : "sem-categoria";
-
-      const categoria = this.sanitizeFileName(categoriaRaw);
-
-      const pdfName = `${ordemFinal}_${tipo}_${categoria}.pdf`;
-      const pdfPath = path.join(OUTPUT_DIR, pdfName);
-
-      await page.pdf({
-        path: pdfPath,
-        width: "700px",
-        height: "1058px",
-        printBackground: true,
-        margin: {
-          top: "0px",
-          right: "0px",
-          bottom: "0px",
-          left: "0px",
-        },
-      });
-
-       await page.close();
-      // Sugerir coleta de lixo se possível (Node.js)
-      if (global.gc) global.gc();
-      
-      processed++;
-
-      this.emit("progress", {
-        processed,
-        total,
-        percentage: Math.round((processed / total) * 100),
-      });
-    }
-
-    const baseName = originalFileName
-      ? path.parse(originalFileName).name
-      : path.parse(excelFilePath).name;
-
-    const date = this.getDateStamp();
-    let zipName = `${baseName}_${date}.zip`;
-
-    let zipPath = path.join(OUTPUT_DIR, zipName);
-    zipPath = this.getUniqueFilePath(zipPath);
-
-    const output = fs.createWriteStream(zipPath);
-    const archive = archiver("zip", { zlib: { level: 9 } });
-
-    archive.pipe(output);
-
+    // Limpar output antigo
     fs.readdirSync(OUTPUT_DIR).forEach((file) => {
-      if (file.endsWith(".pdf")) {
-        archive.file(path.join(OUTPUT_DIR, file), { name: file });
+      if (file.endsWith(".pdf") || file.endsWith(".zip")) {
+        try { fs.unlinkSync(path.join(OUTPUT_DIR, file)); } catch(e) {}
       }
     });
 
-    await archive.finalize();
+    // Agora podemos processar em pequenos lotes (paralelo) para ser muito mais rápido
+    // Usaremos lotes de 5 cards simultâneos para aproveitar os 8 vCPUs
+    const BATCH_SIZE = 5;
+    for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+      const batch = rows.slice(i, i + BATCH_SIZE);
+      await Promise.all(batch.map(async (row, index) => {
+        const currentIdx = i + index;
+        const tipo = this.normalizeType(row.tipo);
+        if (!tipo) return;
 
-    return zipPath;
+        const templatePath = path.join(TEMPLATES_DIR, `${tipo}.html`);
+        if (!fs.existsSync(templatePath)) return;
+
+        let html = fs.readFileSync(templatePath, "utf8");
+        let valorFinal = String(row.valor ?? "");
+        if (tipo !== "promocao") {
+          valorFinal = valorFinal.replace(/%/g, "").trim();
+        }
+
+        let logoFile = "blank.png";
+        if (row.logo && String(row.logo).trim() !== "") {
+          const possibleLogo = String(row.logo).trim();
+          const possiblePath = path.join(LOGOS_DIR, possibleLogo);
+          if (fs.existsSync(possiblePath)) logoFile = possibleLogo;
+        }
+
+        const logoBase64 = this.imageToBase64(path.join(LOGOS_DIR, logoFile));
+        const seloBase64 = row.selo ? this.imageToBase64(path.join(SELOS_DIR, row.selo.toLowerCase() === "nova" ? "acaonova.png" : row.selo.toLowerCase() === "renovada" ? "acaorenovada.png" : "")) : "";
+        const segmentoRaw = row.segmento && String(row.segmento).trim() !== "" ? String(row.segmento).trim() : "";
+
+        html = html
+          .replaceAll("{{TEXTO}}", String(row.texto ?? ""))
+          .replaceAll("{{VALOR}}", valorFinal)
+          .replaceAll("{{COMPLEMENTO}}", String(row.complemento ?? ""))
+          .replaceAll("{{LEGAL}}", String(row.legal ?? ""))
+          .replaceAll("{{SEGMENTO}}", segmentoRaw)
+          .replaceAll("{{CUPOM}}", String(row.cupom ?? ""))
+          .replaceAll("{{UF}}", row.uf ? `UF: ${row.uf}` : "")
+          .replaceAll("{{URN}}", row.urn ? `URN: ${row.urn}` : "")
+          .replaceAll("{{LOGO}}", logoBase64)
+          .replaceAll("{{SELO}}", seloBase64);
+
+        const tmpHtmlPath = path.join(TMP_DIR, `card_${currentIdx + 1}.html`);
+        fs.writeFileSync(tmpHtmlPath, html);
+
+        const page = await this.browser!.newPage();
+        try {
+          await page.setViewport({ width: 700, height: 1058 });
+          await page.goto(`file://${tmpHtmlPath}`, { waitUntil: "networkidle0", timeout: 30000 });
+
+          const ordemFinal = row.ordem && String(row.ordem).trim() !== "" ? String(row.ordem).trim() : String(currentIdx + 1);
+          const categoriaRaw = row.categoria && String(row.categoria).trim() !== "" ? String(row.categoria).trim() : "sem-categoria";
+          const categoria = this.sanitizeFileName(categoriaRaw);
+          const pdfName = `${ordemFinal}_${tipo}_${categoria}.pdf`;
+          const pdfPath = path.join(OUTPUT_DIR, pdfName);
+
+          await page.pdf({
+            path: pdfPath,
+            width: "700px",
+            height: "1058px",
+            printBackground: true,
+            margin: { top: "0px", right: "0px", bottom: "0px", left: "0px" },
+          });
+
+          cards.push({ id: pdfName, template: tipo, data: row });
+        } finally {
+          await page.close();
+        }
+
+        processed++;
+        this.emit("progress", { processed, total, percentage: Math.round((processed / total) * 100) });
+      }));
+    }
+
+    return cards;
   }
 
   private getContrastColor(hexColor: string): string {
-    // Se não for uma cor válida, assume fundo escuro (texto branco)
     if (!hexColor || !hexColor.startsWith('#')) return '#ffffff';
-    
     const r = parseInt(hexColor.slice(1, 3), 16);
     const g = parseInt(hexColor.slice(3, 5), 16);
     const b = parseInt(hexColor.slice(5, 7), 16);
-    
-    // Fórmula de luminância relativa
     const yiq = (r * 299 + g * 587 + b * 114) / 1000;
     return yiq >= 128 ? '#000000' : '#ffffff';
   }
 
-  async generateJornal(excelFilePath: string, options: { headerPath?: string, backgroundColor?: string, categoryBoxColor?: string, footerText?: string } = {}): Promise<string> {
-    if (!this.browser) throw new Error("Browser not initialized");
+  async generateJornal(options: { headerPath?: string, backgroundColor?: string, categoryBoxColor?: string, footerText?: string } = {}): Promise<string> {
+    await this.initialize();
+    
+    const excelFiles = fs.readdirSync(path.join(BASE_DIR, "uploads"));
+    if (excelFiles.length === 0) throw new Error("Nenhuma planilha encontrada para gerar o jornal");
+    const excelFilePath = path.join(BASE_DIR, "uploads", excelFiles[0]);
 
-    const { headerPath, backgroundColor = "#5a2d0c", categoryBoxColor = "#1f7a3f", footerText } = options;
+    const { backgroundColor = "#1a365d", categoryBoxColor = "#2563eb", footerText } = options;
     const contrastColor = this.getContrastColor(backgroundColor);
 
     const workbook = xlsx.readFile(excelFilePath);
@@ -295,344 +227,56 @@ export class CardGenerator extends EventEmitter {
     const pageWidth = (cardWidth * 3) + (gap * 4);
 
     let headerHtml = "";
-    if (headerPath && fs.existsSync(headerPath)) {
-      const headerBase64 = this.imageToBase64(headerPath);
+    if (options.headerPath && fs.existsSync(options.headerPath)) {
+      const headerBase64 = this.imageToBase64(options.headerPath);
       headerHtml = `<div class="header-image-container"><img src="${headerBase64}" class="header-image" /></div>`;
     } else {
-      headerHtml = `
-        <div class="header">
-          <h1 class="header-title">OFERTAS DA SEMANA</h1>
-          <div class="header-date">${vigencia}</div>
-        </div>
-      `;
+      headerHtml = `<div class="header"><h1 class="header-title">OFERTAS DA SEMANA</h1><div class="header-date">${vigencia}</div></div>`;
     }
 
     const footerContent = footerText || "OFERTAS SUJEITAS A SAÍREM DO AR A QUALQUER MOMENTO SEM AVISO PRÉVIO. CONFIRA A REGRA E MIX PARTICIPANTE DE CADA AÇÃO.";
 
-    let html = `
-    <!DOCTYPE html>
-    <html lang="pt-BR">
-    <head>
-      <meta charset="UTF-8">
-      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
-      <style>
-        @page { margin: 0; size: ${pageWidth}px auto; }
-        * { box-sizing: border-box; }
-        html, body {
-          margin: 0;
-          padding: 0;
-          background: ${backgroundColor};
-          font-family: 'Inter', sans-serif;
-          width: ${pageWidth}px;
-        }
-        .header {
-          background: ${backgroundColor};
-          padding: 100px 0;
-          text-align: center;
-          color: ${contrastColor};
-          width: 100%;
-        }
-        .header-image-container {
-          width: 100%;
-          line-height: 0;
-        }
-        .header-image {
-          width: 100%;
-          height: auto;
-          display: block;
-        }
-        .header-title { font-size: 160px; font-weight: 900; margin: 0; letter-spacing: -5px; }
-        .header-date { font-size: 80px; font-weight: 700; margin-top: 40px; color: ${contrastColor === '#000000' ? '#1a7d00' : '#f2c94c'}; }
-        .container { padding: ${gap}px; width: 100%; }
-        .categoria-section { margin-bottom: 120px; width: 100%; text-align: center; }
-        .tarja-categoria {
-          background: ${categoryBoxColor};
-          color: white;
-          padding: 40px 120px;
-          border-radius: 999px;
-          font-weight: 900;
-          font-size: 90px;
-          display: inline-block;
-          margin-bottom: 80px;
-          text-transform: uppercase;
-          box-shadow: 0 20px 40px rgba(0,0,0,0.5);
-        }
-        .grid {
-          display: flex;
-          flex-wrap: wrap;
-          justify-content: center;
-          gap: ${gap}px;
-        }
-        .card-wrapper {
-          width: ${cardWidth}px;
-          height: 1058px;
-          background: white;
-          border-radius: 40px;
-          overflow: hidden;
-          box-shadow: 0 30px 60px rgba(0,0,0,0.6);
-          position: relative;
-          display: flex;
-          flex-direction: column;
-        }
-        .selo-container {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 125px; 
-          z-index: 100;
-        }
-        .selo-img { width: 100%; height: auto; }
-        .footer-legal {
-          padding: 60px;
-          color: ${contrastColor};
-          font-size: 32px;
-          text-align: center;
-          font-weight: 700;
-          text-transform: uppercase;
-          width: 100%;
-          line-height: 1.5;
-        }
-        .card-body-wrapper {
-          width: 100%;
-          height: 100%;
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-          align-items: center;
-          padding: 0;
-          text-align: center;
-          position: relative;
-          flex-grow: 1;
-        }
-      </style>
-    </head>
-    <body>
-      ${headerHtml}
-      <div class="container">
-    `;
+    let html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet"><style>@page { margin: 0; size: ${pageWidth}px auto; } * { box-sizing: border-box; } html, body { margin: 0; padding: 0; background: ${backgroundColor}; font-family: 'Inter', sans-serif; width: ${pageWidth}px; } .header { background: #f0f0f0; padding: 60px; text-align: center; border-bottom: 10px solid ${categoryBoxColor}; } .header-title { font-size: 120px; font-weight: 900; margin: 0; color: #333; letter-spacing: -2px; } .header-date { font-size: 60px; font-weight: 700; color: #666; margin-top: 10px; } .header-image-container { width: 100%; line-height: 0; } .header-image { width: 100%; height: auto; display: block; } .container { padding: ${gap}px; } .category-section { margin-bottom: ${gap * 1.5}px; } .category-title { background: ${categoryBoxColor}; color: white; padding: 30px 60px; font-size: 54px; font-weight: 900; border-radius: 20px; margin-bottom: ${gap}px; display: inline-block; text-transform: uppercase; box-shadow: 0 15px 35px rgba(0,0,0,0.2); } .cards-grid { display: grid; grid-template-columns: repeat(3, ${cardWidth}px); gap: ${gap}px; } .card-wrapper { width: ${cardWidth}px; height: 1058px; background: white; border-radius: 30px; overflow: hidden; box-shadow: 0 25px 50px rgba(0,0,0,0.3); } .card-iframe { width: 100%; height: 100%; border: none; overflow: hidden; } .footer { padding: 80px ${gap}px; text-align: center; color: ${contrastColor}; font-size: 32px; font-weight: 700; line-height: 1.4; opacity: 0.9; }</style></head><body>${headerHtml}<div class="container">`;
 
-    for (const [categoria, catRows] of Object.entries(groupedRows)) {
-      html += `
-        <div class="categoria-section">
-          <div class="tarja-categoria">${categoria}</div>
-          <div class="grid">
-      `;
-
-      for (const row of catRows) {
+    for (const [category, categoryRows] of Object.entries(groupedRows)) {
+      html += `<div class="category-section"><div class="category-title">${category}</div><div class="cards-grid">`;
+      for (const row of categoryRows) {
         const tipo = this.normalizeType(row.tipo);
+        if (!tipo) continue;
         const templatePath = path.join(TEMPLATES_DIR, `${tipo}.html`);
-
-        if (fs.existsSync(templatePath)) {
-          let cardHtml = fs.readFileSync(templatePath, "utf8");
-
-          let valorFinal = String(row.valor ?? "");
-          if (tipo !== "promocao") {
-            if (valorFinal.includes("%")) {
-              valorFinal = valorFinal.replace(/\./g, ",");
-              if (!valorFinal.includes(" %")) {
-                valorFinal = valorFinal.replace("%", " %");
-              }
-            }
-          }
-
-          let logoFile = "blank.png";
-          if (row.logo && String(row.logo).trim() !== "") {
-            const possibleLogo = String(row.logo).trim();
-            if (fs.existsSync(path.join(LOGOS_DIR, possibleLogo))) {
-              logoFile = possibleLogo;
-            }
-          }
-          const logoBase64 = this.imageToBase64(path.join(LOGOS_DIR, logoFile));
-
-          const seloImg = row.selo
-            ? (row.selo.toLowerCase() === "nova" ? "acaonova.png" : row.selo.toLowerCase() === "renovada" ? "acaorenovada.png" : "")
-            : "";
-          const seloBase64 = seloImg ? this.imageToBase64(path.join(SELOS_DIR, seloImg)) : "";
-
-          const segmentoRaw = row.segmento && String(row.segmento).trim() !== "" ? String(row.segmento).trim() : "";
-          const cupomFinal = tipo === 'promocao' ? '' : String(row.cupom ?? "");
-
-          let processedCardHtml = cardHtml
-            .replaceAll("{{TEXTO}}", String(row.texto ?? ""))
-            .replaceAll("{{VALOR}}", valorFinal)
-            .replaceAll("{{COMPLEMENTO}}", String(row.complemento ?? ""))
-            .replaceAll("{{LEGAL}}", String(row.legal ?? ""))
-            .replaceAll("{{SEGMENTO}}", segmentoRaw)
-            .replaceAll("{{CUPOM}}", cupomFinal)
-            .replaceAll("{{UF}}", row.uf ? `UF: ${row.uf}` : "")
-            .replaceAll("{{URN}}", row.urn ? `URN: ${row.urn}` : "")
-            .replaceAll("{{LOGO}}", logoBase64)
-            .replaceAll("{{SELO}}", "");
-
-          const bodyMatch = processedCardHtml.match(/<body.*?>([\s\S]*?)<\/body>/i);
-          const styleMatch = processedCardHtml.match(/<style.*?>([\s\S]*?)<\/style>/i);
-          
-          let cardBody = bodyMatch ? bodyMatch[1] : processedCardHtml;
-          const cardStyle = styleMatch ? styleMatch[1] : "";
-
-          const cardId = `c${Math.random().toString(36).substr(2, 9)}`;
-          
-          const scopedStyle = cardStyle.replace(/([^{}\r\n,]+)(?=\{)/g, (match) => {
-              if (match.includes('@')) return match;
-              return match.split(',').map(s => {
-                  const t = s.trim();
-                  if (!t) return s;
-                  if (t === 'body' || t === 'html' || t === '.card') return `#${cardId}`;
-                  return `#${cardId} ${t}`;
-              }).join(', ');
-          });
-
-          cardBody = cardBody.replace(/class="[^"]*valor[^"]*"/i, (m) => m.replace('class="', `class="auto-shrink-valor-${cardId} `));
-          cardBody = cardBody.replace(/id="valor-texto"/i, `id="valor-texto" class="auto-shrink-valor-${cardId}"`);
-          cardBody = cardBody.replace(/class="[^"]*cupom-text[^"]*"/i, (m) => m.replace('class="', `class="auto-shrink-cupom-${cardId} `));
-          cardBody = cardBody.replace(/id="cupom-text"/i, `id="cupom-text" class="auto-shrink-cupom-${cardId}"`);
-
-          const logoAjusteStyle = tipo === 'cupom' ? `
-            #${cardId} .logo { margin-top: 20px !important; height: 100px !important; }
-            #${cardId} .logo img { max-height: 100px !important; }
-            #${cardId} .card { justify-content: space-between !important; padding-bottom: 20px !important; }
-            #${cardId} .cupom-box { display: flex !important; align-items: center !important; overflow: hidden !important; }
-            #${cardId} .cupom-codigo { flex: 1 !important; display: flex !important; align-items: center !important; justify-content: center !important; overflow: hidden !important; width: 510px !important; }
-            #${cardId} .auto-shrink-cupom-${cardId} { white-space: nowrap !important; display: inline-block !important; }
-          ` : '';
-
-          const promoAjusteStyle = tipo === 'promocao' ? `
-            #${cardId} .valor-texto, #${cardId} .valor { 
-              white-space: normal !important; 
-              word-break: break-word !important; 
-              line-height: 1.1 !important;
-              max-width: 600px !important;
-              max-height: 480px !important;
-              display: block !important;
-              margin: 0 auto !important;
-              overflow: hidden !important;
-              text-align: center !important;
-              width: 600px !important;
-            }
-          ` : '';
-
-          html += `
-            <div class="card-wrapper" id="${cardId}" data-tipo="${tipo}">
-              <style>
-                #${cardId} { 
-                  font-family: 'Inter', sans-serif !important; 
-                  background: white; 
-                  width: 700px; 
-                  height: 1058px; 
-                  position: relative; 
-                  display: flex; 
-                  flex-direction: column; 
-                  justify-content: center;
-                  align-items: center;
-                  padding: 0;
-                  overflow: hidden;
-                }
-                #${cardId} .valor-texto, #${cardId} .valor { font-weight: 900 !important; font-family: 'Inter', sans-serif !important; }
-                #${cardId} .cupom-text, #${cardId} #cupom-text { font-family: 'Inter', sans-serif !important; }
-                ${scopedStyle}
-                ${logoAjusteStyle}
-                ${promoAjusteStyle}
-              </style>
-              ${seloBase64 ? `<div class="selo-container"><img src="${seloBase64}" class="selo-img"></div>` : ''}
-              <div class="card-body-wrapper">
-                ${cardBody}
-              </div>
-            </div>`;
+        if (!fs.existsSync(templatePath)) continue;
+        let cardHtml = fs.readFileSync(templatePath, "utf8");
+        let valorFinal = String(row.valor ?? "");
+        if (tipo !== "promocao") valorFinal = valorFinal.replace(/%/g, "").trim();
+        let logoFile = "blank.png";
+        if (row.logo && String(row.logo).trim() !== "") {
+          const possibleLogo = String(row.logo).trim();
+          const possiblePath = path.join(LOGOS_DIR, possibleLogo);
+          if (fs.existsSync(possiblePath)) logoFile = possibleLogo;
         }
+        const logoBase64 = this.imageToBase64(path.join(LOGOS_DIR, logoFile));
+        const seloBase64 = row.selo ? this.imageToBase64(path.join(SELOS_DIR, row.selo.toLowerCase() === "nova" ? "acaonova.png" : row.selo.toLowerCase() === "renovada" ? "acaorenovada.png" : "")) : "";
+        const segmentoRaw = row.segmento && String(row.segmento).trim() !== "" ? String(row.segmento).trim() : "";
+        cardHtml = cardHtml.replaceAll("{{TEXTO}}", String(row.texto ?? "")).replaceAll("{{VALOR}}", valorFinal).replaceAll("{{COMPLEMENTO}}", String(row.complemento ?? "")).replaceAll("{{LEGAL}}", String(row.legal ?? "")).replaceAll("{{SEGMENTO}}", segmentoRaw).replaceAll("{{CUPOM}}", String(row.cupom ?? "")).replaceAll("{{UF}}", row.uf ? `UF: ${row.uf}` : "").replaceAll("{{URN}}", row.urn ? `URN: ${row.urn}` : "").replaceAll("{{LOGO}}", logoBase64).replaceAll("{{SELO}}", seloBase64);
+        html += `<div class="card-wrapper"><iframe class="card-iframe" srcdoc="${cardHtml.replace(/"/g, "&quot;")}"></iframe></div>`;
       }
-
-      html += `
-          </div>
-        </div>
-      `;
+      html += `</div></div>`;
     }
 
-    html += `
-      </div>
-      <div class="footer-legal">
-        ${footerContent}
-      </div>
-      <script>
-        async function runAutoShrink() {
-          const cards = document.querySelectorAll('.card-wrapper');
-          for (const card of Array.from(cards)) {
-            const cardId = card.id;
-            const tipo = card.getAttribute('data-tipo');
-            
-            const valor = card.querySelector('.auto-shrink-valor-' + cardId);
-            if (valor) {
-              const maxH = tipo === 'promocao' ? 480 : 400;
-              const maxW = tipo === 'promocao' ? 600 : 640;
-              
-              if (tipo === 'promocao') {
-                 valor.style.whiteSpace = 'normal';
-                 valor.style.width = '600px';
-                 valor.style.display = 'block';
-                 const currentFs = parseInt(window.getComputedStyle(valor).fontSize);
-                 valor.style.fontSize = (currentFs * 0.5) + 'px';
-              }
+    html += `</div><div class="footer">${footerContent}</div></body></html>`;
 
-              let fs = parseInt(window.getComputedStyle(valor).fontSize);
-              let count = 0;
-              while ((valor.scrollWidth > maxW || valor.scrollHeight > maxH) && fs > 10 && count < 200) {
-                fs -= 1;
-                valor.style.setProperty('font-size', fs + 'px', 'important');
-                valor.style.lineHeight = '1.0';
-                count++;
-              }
-            }
+    const jornalHtmlPath = path.join(TMP_DIR, `jornal_completo.html`);
+    fs.writeFileSync(jornalHtmlPath, html);
 
-            if (tipo !== 'promocao') {
-              const cupom = card.querySelector('.auto-shrink-cupom-' + cardId);
-              if (cupom) {
-                let fs = parseInt(window.getComputedStyle(cupom).fontSize);
-                const container = cupom.parentElement;
-                const maxW = container.clientWidth || 510;
-                let count = 0;
-                while ((cupom.scrollWidth > maxW) && fs > 10 && count < 100) {
-                  fs -= 2;
-                  cupom.style.setProperty('font-size', fs + 'px', 'important');
-                  count++;
-                }
-              }
-            }
-          }
-        }
-      </script>
-    </body>
-    </html>
-    `;
-
-    const filePath = path.join(OUTPUT_DIR, "jornal.pdf");
-    const page = await this.browser.newPage();
-    await page.setViewport({ width: pageWidth, height: 10000 });
-    await page.setContent(html, { waitUntil: "networkidle0" });
-    await page.evaluateHandle('document.fonts.ready');
-    
-    await page.evaluate(async () => {
-      // @ts-ignore
-      await runAutoShrink();
-      await new Promise(r => setTimeout(r, 500));
-    });
-
-    const totalHeight = await page.evaluate(() => document.documentElement.scrollHeight);
-
-    await page.pdf({
-      path: filePath,
-      width: `${pageWidth}px`,
-      height: `${totalHeight}px`,
-      printBackground: true,
-      margin: { top: 0, right: 0, bottom: 0, left: 0 }
-    });
-
-    await page.close();
-    return filePath;
-  }
-
-  async close() {
-    if (this.browser) {
-      await this.browser.close();
-      this.browser = null;
+    const page = await this.browser!.newPage();
+    try {
+      await page.setViewport({ width: pageWidth, height: 2000 });
+      await page.goto(`file://${jornalHtmlPath}`, { waitUntil: "networkidle0", timeout: 120000 });
+      const jornalPdfPath = path.join(OUTPUT_DIR, `jornal_ofertas_${this.getDateStamp()}.pdf`);
+      await page.pdf({ path: jornalPdfPath, width: `${pageWidth}px`, height: "auto", printBackground: true, margin: { top: "0px", right: "0px", bottom: "0px", left: "0px" } });
+      return jornalPdfPath;
+    } finally {
+      await page.close();
     }
   }
 }
