@@ -2,6 +2,8 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import { createServer } from "http";
+import multer from "multer";
+import { CardGenerator } from "../cardGenerator";
 import net from "net";
 import path from "path";
 import fs from "fs";
@@ -46,6 +48,55 @@ async function startServer() {
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"]
   }));
+
+  // Configurar multer para upload de arquivos
+  const upload = multer({ dest: "uploads/" });
+
+  // Rota de API tradicional para processamento de planilha (Alternativa ao tRPC)
+  app.post("/api/process-excel", upload.single("file"), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "Nenhum arquivo enviado" });
+      }
+
+      const generator = new CardGenerator();
+      const cards = await generator.processExcel(req.file.path);
+      
+      // Limpar arquivo temporário
+      fs.unlinkSync(req.file.path);
+      
+      res.json({ cards });
+    } catch (error: any) {
+      console.error("Erro no processamento da planilha:", error);
+      res.status(500).json({ error: error.message || "Erro interno no servidor" });
+    }
+  });
+
+  // Rota de API tradicional para gerar o jornal (Alternativa ao tRPC)
+  app.post("/api/generate-jornal", upload.single("header"), async (req, res) => {
+    try {
+      const { backgroundColor, categoryBoxColor, footerText } = req.body;
+      const headerPath = req.file ? req.file.path : undefined;
+
+      const generator = new CardGenerator();
+      const pdfPath = await generator.generateJornal({
+        headerPath,
+        backgroundColor,
+        categoryBoxColor,
+        footerText
+      });
+
+      // Enviar o arquivo PDF e depois deletar o arquivo temporário do header se existir
+      res.download(pdfPath, "jornal_ofertas.pdf", (err) => {
+        if (headerPath && fs.existsSync(headerPath)) {
+          fs.unlinkSync(headerPath);
+        }
+      });
+    } catch (error: any) {
+      console.error("Erro na geração do jornal:", error);
+      res.status(500).json({ error: error.message || "Erro interno no servidor" });
+    }
+  });
 
   const io = new SocketIOServer(server, {
     cors: {
