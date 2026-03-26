@@ -9,7 +9,6 @@ const execAsync = promisify(exec);
 const LOGOS_DIR = path.resolve("logos");
 
 // O Token deve ser configurado como variável de ambiente no Railway (GITHUB_TOKEN)
-// Se não houver token, a sincronização será ignorada para evitar erros
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const REPO_URL = GITHUB_TOKEN ? `https://esiolima:${GITHUB_TOKEN}@github.com/esiolima/cards_trade_v2.git` : null;
 
@@ -23,38 +22,47 @@ if (!fs.existsSync(LOGOS_DIR)) {
  */
 async function syncWithGithub(action: string, fileName: string) {
   if (!REPO_URL) {
-    console.warn(`[GIT SYNC] Sincronização ignorada: GITHUB_TOKEN não configurado.`);
+    console.warn(`[GIT SYNC] Sincronização ignorada: GITHUB_TOKEN não configurado nas variáveis de ambiente.`);
     return;
   }
 
   try {
     console.log(`[GIT SYNC] Iniciando sincronização: ${action} ${fileName}`);
     
-    // Configurar usuário
+    // 1. Configurar identidade Git localmente no repositório
     await execAsync('git config user.name "Manus AI"');
     await execAsync('git config user.email "manus@manus.im"');
     
-    // Adicionar, commitar e dar push
+    // 2. Adicionar arquivos da pasta logos
     await execAsync('git add logos/');
-    const commitMsg = `Plataforma: ${action === 'upload' ? 'Adicionado' : 'Removido'} logo ${fileName}`;
     
-    // Usar try/catch no commit pois se não houver mudanças o git retorna erro
+    // 3. Criar commit
+    const commitMsg = `Plataforma: ${action === 'upload' ? 'Adicionado' : 'Removido'} logo ${fileName}`;
     try {
       await execAsync(`git commit -m "${commitMsg}"`);
-    } catch (e) {
-      console.log("[GIT SYNC] Sem mudanças para commitar.");
-      return;
+      console.log(`[GIT SYNC] Commit criado: ${commitMsg}`);
+    } catch (e: any) {
+      if (e.stdout && e.stdout.includes("nothing to commit")) {
+        console.log("[GIT SYNC] Nada para commitar (arquivo já existe ou sem mudanças).");
+        return;
+      }
+      throw e;
     }
     
-    // Configurar a URL remota com o token
+    // 4. Configurar a URL remota com o token para garantir permissão
     await execAsync(`git remote set-url origin ${REPO_URL}`);
     
-    // Push para o branch fix-logos
-    await execAsync('git push origin fix-logos');
+    // 5. Tentar o Push para o branch fix-logos
+    // Usamos --force-with-lease ou apenas push para garantir que as mudanças locais (logos novos) subam
+    const { stdout, stderr } = await execAsync('git push origin fix-logos');
     
-    console.log(`[GIT SYNC] Sucesso: ${fileName} sincronizado com GitHub.`);
-  } catch (error) {
-    console.error(`[GIT SYNC] Erro ao sincronizar com GitHub:`, error);
+    if (stderr) console.log(`[GIT SYNC] Git Stderr: ${stderr}`);
+    console.log(`[GIT SYNC] Sucesso: ${fileName} sincronizado com GitHub. Output: ${stdout}`);
+    
+  } catch (error: any) {
+    console.error(`[GIT SYNC] ERRO CRÍTICO na sincronização:`, error.message);
+    if (error.stderr) console.error(`[GIT SYNC] Detalhes do erro (stderr):`, error.stderr);
+    if (error.stdout) console.error(`[GIT SYNC] Detalhes do erro (stdout):`, error.stdout);
   }
 }
 
@@ -112,6 +120,7 @@ export function setupLogoUploadRoute(app: express.Express) {
       return res.status(400).json({ error: "Nenhum arquivo foi enviado" });
     }
 
+    // Sincronizar com GitHub (não usamos await para não travar a resposta do usuário)
     syncWithGithub('upload', req.file.originalname);
 
     res.json({
