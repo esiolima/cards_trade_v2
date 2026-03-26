@@ -92,7 +92,6 @@ export class CardGenerator extends EventEmitter {
     const ext = path.extname(imagePath).replace(".", "").toLowerCase();
     const buffer = fs.readFileSync(imagePath);
     
-    // Mapeamento de MIME type para garantir suporte correto, especialmente para SVG
     let mimeType = `image/${ext}`;
     if (ext === "svg") mimeType = "image/svg+xml";
     if (ext === "jpg") mimeType = "image/jpeg";
@@ -101,16 +100,17 @@ export class CardGenerator extends EventEmitter {
   }
 
   /**
-   * Busca inteligente de logo:
+   * Busca inteligente de logo (Melhorada):
    * 1. Tenta o nome exato fornecido.
    * 2. Tenta o nome sem espaços e em minúsculo com várias extensões.
-   * 3. Retorna 'blank.png' se nada for encontrado.
+   * 3. Tenta buscar por prefixo (se o arquivo começa com o que foi digitado).
+   * 4. Retorna 'blank.png' se nada for encontrado.
    */
   private findLogoFile(logoName: string): string {
     if (!logoName || String(logoName).trim() === "") return "blank.png";
 
     const cleanName = String(logoName).trim();
-    const extensions = [".png", ".jpg", ".jpeg", ".webp", ".svg", ".PNG", ".JPG", ".JPEG", ".WEBP", ".SVG"];
+    const extensions = [".png", ".jpg", ".jpeg", ".webp", ".svg"];
 
     // 1. Tenta o caminho exato (caso o usuário tenha digitado a extensão correta)
     if (fs.existsSync(path.join(LOGOS_DIR, cleanName))) {
@@ -123,18 +123,25 @@ export class CardGenerator extends EventEmitter {
 
     // Busca por nome exato sem extensão (ex: "unilever" -> "unilever.png")
     for (const ext of extensions) {
-      const target = searchName.endsWith(ext.toLowerCase()) ? searchName : searchName + ext.toLowerCase();
+      const target = searchName.endsWith(ext) ? searchName : searchName + ext;
       const found = filesInLogos.find(f => f.toLowerCase() === target);
       if (found) return found;
     }
 
-    // Busca parcial (se o arquivo começar com o nome digitado)
-    const partialMatch = filesInLogos.find(f => {
-      const baseName = path.parse(f).name.toLowerCase();
-      return baseName === searchName;
+    // 3. BUSCA POR PREFIXO (ex: "Unileve" -> "unilever.png")
+    // Filtramos apenas arquivos de imagem válidos
+    const validFiles = filesInLogos.filter(f => {
+      const ext = path.extname(f).toLowerCase();
+      return extensions.includes(ext);
     });
 
-    if (partialMatch) return partialMatch;
+    // Tenta encontrar um arquivo que COMEÇA com o que foi digitado
+    const prefixMatch = validFiles.find(f => {
+      const baseName = path.parse(f).name.toLowerCase();
+      return baseName.startsWith(searchName);
+    });
+
+    if (prefixMatch) return prefixMatch;
 
     return "blank.png";
   }
@@ -172,7 +179,6 @@ export class CardGenerator extends EventEmitter {
         valorFinal = valorFinal.replace(/%/g, "").trim();
       }
 
-      // 🔥 BUSCA INTELIGENTE DE LOGO IMPLEMENTADA AQUI
       const logoFile = this.findLogoFile(row.logo);
 
       const logoBase64 = this.imageToBase64(
@@ -258,7 +264,6 @@ export class CardGenerator extends EventEmitter {
       });
     }
 
-    // 🔥 NOME DO ZIP MELHORADO
     const baseName = originalFileName
       ? path.parse(originalFileName).name
       : path.parse(excelFilePath).name;

@@ -7,7 +7,7 @@ import { useLocation } from "wouter";
 interface Logo {
   name: string;
   path: string;
-  mtime?: number; // Data de modificação vinda do backend
+  mtime?: number;
 }
 
 type SortOption = "name" | "date";
@@ -32,7 +32,6 @@ export default function LogoManager() {
     }
   }, [logosData]);
 
-  // Lógica de Ordenação
   const sortedLogos = useMemo(() => {
     const filtered = logos.filter(logo => logo.name !== "blank.png");
     
@@ -40,7 +39,6 @@ export default function LogoManager() {
       if (sortBy === "name") {
         return a.name.localeCompare(b.name);
       } else {
-        // Ordenar por data (mais recentes primeiro)
         return (b.mtime || 0) - (a.mtime || 0);
       }
     });
@@ -295,7 +293,8 @@ export default function LogoManager() {
                     <Trash2 className="w-4 h-4" />
                   </button>
 
-                  <div className="w-full h-32 flex items-center justify-center mb-3 bg-white/5 rounded-lg overflow-hidden">
+                  {/* 🔥 FUNDO BRANCO ADICIONADO AQUI PARA MELHOR VISUALIZAÇÃO */}
+                  <div className="w-full h-32 flex items-center justify-center mb-3 bg-white rounded-lg overflow-hidden shadow-inner">
                     <img
                       src={`/logos/${logo.name}`}
                       alt={logo.name}
