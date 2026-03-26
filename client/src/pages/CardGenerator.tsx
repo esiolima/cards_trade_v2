@@ -67,16 +67,32 @@ export default function CardGenerator() {
   }, [bgColor, categoryBoxColor, footerText, headerFile]);
 
   useEffect(() => {
-    const socket = io({ 
+    // CORREÇÃO: Usar window.location.origin para garantir conexão correta no Railway
+    const socket = io(window.location.origin, { 
       reconnection: true, 
       reconnectionDelay: 1000, 
       reconnectionDelayMax: 5000, 
       reconnectionAttempts: 5,
-      path: "/socket.io"
+      path: "/socket.io",
+      transports: ['websocket', 'polling'] // Tentar múltiplos transportes
     });
-    socket.on("connect", () => { console.log("Connected to server"); socket.emit("join", sessionId); });
+    
+    socket.on("connect", () => { 
+      console.log("Connected to server:", socket.id); 
+      socket.emit("join", sessionId); 
+    });
+    
     socket.on("progress", (data: ProgressData) => setProgress(data));
-    socket.on("error", (message: string) => { setError(message); setIsProcessing(false); });
+    socket.on("error", (message: string) => { 
+      setError(`Erro no processamento: ${message}`); 
+      setIsProcessing(false); 
+    });
+    
+    socket.on("connect_error", (err) => {
+      console.error("Socket connection error:", err);
+      // Não setamos erro visual aqui para não assustar o usuário se o polling funcionar
+    });
+
     socketRef.current = socket;
     return () => { socket.disconnect(); };
   }, [sessionId]);
@@ -120,15 +136,32 @@ export default function CardGenerator() {
     try {
       const formData = new FormData();
       formData.append("file", file);
-      const uploadResponse = await fetch("/api/upload", { method: "POST", body: formData });
-      if (!uploadResponse.ok) throw new Error("Erro ao fazer upload do arquivo");
+      
+      // CORREÇÃO: Garantir caminho relativo absoluto para evitar Failed to fetch
+      const uploadResponse = await fetch(`${window.location.origin}/api/upload`, { 
+        method: "POST", 
+        body: formData 
+      });
+      
+      if (!uploadResponse.ok) {
+        const errorData = await uploadResponse.text();
+        throw new Error(`Erro no servidor (${uploadResponse.status}): ${errorData || 'Upload falhou'}`);
+      }
+      
       const { filePath, fileName } = await uploadResponse.json();
       setUploadedFilePath(filePath);
       setOriginalFileName(fileName);
-      const result = await generateCardsMutation.mutateAsync({ filePath, sessionId, originalFileName: fileName });
+      
+      const result = await generateCardsMutation.mutateAsync({ 
+        filePath, 
+        sessionId, 
+        originalFileName: fileName 
+      });
+      
       if (result.success) setZipPath(result.zipPath);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao processar arquivo");
+      console.error("Upload error:", err);
+      setError(err instanceof Error ? err.message : "Erro ao processar arquivo. Verifique sua conexão.");
     } finally {
       setIsProcessing(false);
     }
@@ -147,7 +180,12 @@ export default function CardGenerator() {
       if (headerFile) {
         const formData = new FormData();
         formData.append("file", headerFile);
-        const uploadResponse = await fetch("/api/upload", { method: "POST", body: formData });
+        
+        const uploadResponse = await fetch(`${window.location.origin}/api/upload`, { 
+          method: "POST", 
+          body: formData 
+        });
+        
         if (uploadResponse.ok) {
           const data = await uploadResponse.json();
           headerPath = data.filePath;
@@ -165,12 +203,13 @@ export default function CardGenerator() {
 
       if (result?.jornalPath) {
         window.open(
-          `/api/download?zipPath=${encodeURIComponent(result.jornalPath)}`,
+          `${window.location.origin}/api/download?zipPath=${encodeURIComponent(result.jornalPath)}`,
           "_blank"
         );
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao gerar jornal");
+      console.error("Jornal generation error:", err);
+      setError(err instanceof Error ? err.message : "Erro ao gerar jornal. Tente novamente.");
     } finally {
       setIsProcessing(false);
     }
@@ -282,7 +321,7 @@ export default function CardGenerator() {
                     <Button onClick={() => {
                         if (zipPath) {
                             const a = document.createElement("a");
-                            a.href = `/api/download?zipPath=${encodeURIComponent(zipPath)}`;
+                            a.href = `${window.location.origin}/api/download?zipPath=${encodeURIComponent(zipPath)}`;
                             a.download = "cards.zip";
                             a.click();
                         }
