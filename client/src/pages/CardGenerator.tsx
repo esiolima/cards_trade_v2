@@ -4,7 +4,23 @@ import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Upload, CheckCircle2, AlertCircle, Download, Hourglass, Moon, Sun, Image, FileText } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { 
+  Upload, 
+  CheckCircle2, 
+  AlertCircle, 
+  Download, 
+  Hourglass, 
+  Moon, 
+  Sun, 
+  Image as ImageIcon, 
+  FileText, 
+  Palette,
+  Type,
+  Layout
+} from "lucide-react";
 
 interface ProgressData {
   total: number;
@@ -15,6 +31,10 @@ interface ProgressData {
 
 export default function CardGenerator() {
   const [file, setFile] = useState<File | null>(null);
+  const [headerFile, setHeaderFile] = useState<File | null>(null);
+  const [bgColor, setBgColor] = useState("#5a2d0c");
+  const [footerText, setFooterText] = useState("");
+  
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState<ProgressData | null>(null);
   const [zipPath, setZipPath] = useState<string | null>(null);
@@ -48,6 +68,12 @@ export default function CardGenerator() {
     setZipPath(null);
     setProgress(null);
     setOriginalFileName(null);
+  };
+
+  const handleHeaderSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    if (!selectedFile) return;
+    setHeaderFile(selectedFile);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -86,32 +112,29 @@ export default function CardGenerator() {
     }
   };
 
-  const handleDownload = async () => {
-    if (!zipPath) return;
-    try {
-      const response = await fetch(`/api/download?zipPath=${encodeURIComponent(zipPath)}`);
-      if (!response.ok) throw new Error("Erro ao baixar arquivo");
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = zipPath?.split("/").pop() || "cards.zip";
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao baixar arquivo");
-    }
-  };
-
   const handleGerarJornal = async () => {
     if (!uploadedFilePath) return;
+    setIsProcessing(true);
+    setError(null);
 
     try {
+      let headerPath = undefined;
+      if (headerFile) {
+        const formData = new FormData();
+        formData.append("file", headerFile);
+        const uploadResponse = await fetch("/api/upload", { method: "POST", body: formData });
+        if (uploadResponse.ok) {
+          const data = await uploadResponse.json();
+          headerPath = data.filePath;
+        }
+      }
+
       const result = await generateJornalMutation.mutateAsync({
         filePath: uploadedFilePath,
         sessionId,
+        headerPath,
+        backgroundColor: bgColor,
+        footerText: footerText || undefined
       });
 
       if (result?.jornalPath) {
@@ -122,10 +145,12 @@ export default function CardGenerator() {
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao gerar jornal");
+    } finally {
+      setIsProcessing(false);
     }
   };
 
-  const bgColor = isDark ? "bg-gradient-to-br from-gray-900 via-blue-950 to-purple-950" : "bg-gradient-to-br from-slate-100 via-blue-100 to-purple-100";
+  const bgColorClass = isDark ? "bg-gradient-to-br from-gray-900 via-blue-950 to-purple-950" : "bg-gradient-to-br from-slate-100 via-blue-100 to-purple-100";
   const cardBg = isDark ? "bg-white/10 backdrop-blur-lg border border-white/20" : "bg-white/50 backdrop-blur-lg border border-white/80";
   const textPrimary = isDark ? "text-white" : "text-slate-900";
   const textSecondary = isDark ? "text-slate-300" : "text-slate-600";
@@ -135,8 +160,8 @@ export default function CardGenerator() {
   const uploadBorder = isDragging ? (isDark ? 'border-cyan-300' : 'border-blue-600') : (isDark ? "border-white/30 hover:border-white/50" : "border-blue-300/80 hover:border-blue-400");
 
   return (
-    <div className={`min-h-screen py-12 px-4 sm:px-6 lg:px-8 transition-colors duration-500 ${bgColor}`}>
-      <div className="max-w-5xl mx-auto">
+    <div className={`min-h-screen py-12 px-4 sm:px-6 lg:px-8 transition-colors duration-500 ${bgColorClass}`}>
+      <div className="max-w-6xl mx-auto">
         <div className="flex items-center justify-between mb-16">
           <div className="flex items-center space-x-4">
             <img src="/martins-logo.png" alt="Martins" className="h-12 object-contain" />
@@ -151,13 +176,13 @@ export default function CardGenerator() {
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 space-y-8">
             <div className={`${cardBg} rounded-2xl p-8 shadow-2xl transition-all duration-300`}>
               
               {!isProcessing && !zipPath && (
                 <div className="space-y-6">
                   <div>
-                    <h2 className={`text-2xl font-bold ${textPrimary} mb-2`}>Transforme suas Planilhas</h2>
+                    <h2 className={`text-2xl font-bold ${textPrimary} mb-2`}>1. Escolha sua Planilha</h2>
                     <p className={textSecondary}>Converta dados Excel em cards PDF profissionais em segundos</p>
                   </div>
                   <div onClick={() => document.getElementById("file-input")?.click()} onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop} className={`border-2 border-dashed rounded-xl p-12 text-center cursor-pointer transition-all duration-300 ${uploadBg} ${uploadBorder}`}>
@@ -183,7 +208,7 @@ export default function CardGenerator() {
                     </div>
                   )}
                   {error && (
-                    <div className={`${isDark ? 'bg-red-500/20 border-red-400/50' : 'bg-red-500/10 border-red-500/20'}`} rounded-lg p-4 flex items-start space-x-3`}>
+                    <div className={`${isDark ? 'bg-red-500/20 border-red-400/50' : 'bg-red-500/10 border-red-500/20'} rounded-lg p-4 flex items-start space-x-3`}>
                       <AlertCircle className={`w-5 h-5 ${isDark ? 'text-red-300' : 'text-red-600'} flex-shrink-0 mt-0.5`} />
                       <div>
                         <p className={`font-medium ${isDark ? 'text-red-200' : 'text-red-800'}`}>Erro</p>
@@ -219,75 +244,127 @@ export default function CardGenerator() {
               {!isProcessing && zipPath && (
                 <div className="space-y-6">
                   <div className="text-center">
-                    <div className={`inline-flex items-center justify-center w-20 h-20 rounded-full mb-4 ${isDark ? 'bg-green-500/20' : 'bg-green-500/10'}`}><CheckCircle2 className={`w-10 h-10 ${isDark ? 'text-green-300' : 'text-green-600'}`} /></div>
-                    <h2 className={`text-2xl font-bold ${textPrimary} mb-2`}>Processamento Concluído!</h2>
-                    <p className={textSecondary}>Seus cards foram gerados com sucesso. Baixe o arquivo ZIP ou o jornal em PDF.</p>
+                    <div className={`inline-flex items-center justify-center w-20 h-20 rounded-full mb-4 ${isDark ? "bg-green-500/20" : "bg-green-500/10"}`}><CheckCircle2 className="w-10 h-10 text-green-500" /></div>
+                    <h2 className={`text-2xl font-bold ${textPrimary} mb-2`}>Tudo Pronto!</h2>
+                    <p className={textSecondary}>Seus cards foram gerados com sucesso.</p>
                   </div>
-                  <div className="flex flex-col sm:flex-row gap-4">
-                    <Button
-                      onClick={handleDownload}
-                      className={`flex-1 text-white py-6 text-lg font-semibold rounded-lg transition-all duration-300 ${isDark ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-500 hover:bg-blue-600'}`}
-                    >
-                      <Download className="w-5 h-5 mr-2" /> Baixar Cards (ZIP)
-                    </Button>
-                    <Button
-                      onClick={handleGerarJornal}
-                      className={`flex-1 text-white py-6 text-lg font-semibold rounded-lg transition-all duration-300 ${isDark ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-green-500 hover:bg-green-600'}`}
-                    >
-                      <FileText className="w-5 h-5 mr-2" /> Gerar Jornal (PDF)
-                    </Button>
+                  <div className="grid grid-cols-2 gap-4">
+                    <Button onClick={() => { setZipPath(null); setFile(null); setUploadedFilePath(null); }} variant="outline" className={`py-6 ${isDark ? 'border-white/20 text-white hover:bg-white/10' : 'border-slate-300 text-slate-700 hover:bg-slate-50'}`}>Nova Planilha</Button>
+                    <Button onClick={() => {
+                        if (zipPath) {
+                            const a = document.createElement("a");
+                            a.href = `/api/download?zipPath=${encodeURIComponent(zipPath)}`;
+                            a.download = "cards.zip";
+                            a.click();
+                        }
+                    }} className={`py-6 text-white ${isDark ? 'bg-green-600 hover:bg-green-500' : 'bg-green-600 hover:bg-green-700'}`}><Download className="w-5 h-5 mr-2" /> Baixar ZIP</Button>
                   </div>
-                  <Button
-                    onClick={() => { setZipPath(null); setFile(null); setOriginalFileName(null); setUploadedFilePath(null); setProgress(null); setError(null); }}
-                    variant="outline"
-                    className={`w-full py-6 text-lg font-semibold rounded-lg transition-all duration-300 ${isDark ? 'border-white/20 text-white hover:bg-white/10' : 'border-slate-300 text-slate-700 hover:bg-slate-100'}`}
-                  >
-                    Processar Nova Planilha
-                  </Button>
                 </div>
               )}
             </div>
+
+            {uploadedFilePath && !isProcessing && (
+              <div className={`${cardBg} rounded-2xl p-8 shadow-2xl transition-all duration-300 space-y-8`}>
+                <div>
+                  <h2 className={`text-2xl font-bold ${textPrimary} mb-2`}>2. Personalize seu Jornal</h2>
+                  <p className={textSecondary}>Configure o visual do jornal consolidado</p>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-8">
+                  <div className="space-y-6">
+                    <div className="space-y-3">
+                      <Label className={`flex items-center space-x-2 ${textPrimary}`}>
+                        <Layout className="w-4 h-4" />
+                        <span>Cabeçalho (Header)</span>
+                      </Label>
+                      <div 
+                        onClick={() => document.getElementById("header-input")?.click()}
+                        className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-all ${uploadBg} ${headerFile ? 'border-green-500' : borderColor}`}
+                      >
+                        {headerFile ? (
+                          <div className="flex items-center justify-center space-x-2">
+                            <ImageIcon className="w-4 h-4 text-green-500" />
+                            <span className={`text-sm truncate max-w-[150px] ${textPrimary}`}>{headerFile.name}</span>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center space-y-1">
+                            <Upload className={`w-5 h-5 ${textSecondary}`} />
+                            <span className={`text-xs ${textSecondary}`}>Subir imagem (PDF, PNG, JPG)</span>
+                          </div>
+                        )}
+                        <input id="header-input" type="file" accept="image/*,.pdf" onChange={handleHeaderSelect} className="hidden" />
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <Label className={`flex items-center space-x-2 ${textPrimary}`}>
+                        <Palette className="w-4 h-4" />
+                        <span>Cor de Fundo</span>
+                      </Label>
+                      <div className="flex items-center space-x-3">
+                        <input 
+                          type="color" 
+                          value={bgColor} 
+                          onChange={(e) => setBgColor(e.target.value)}
+                          className="w-12 h-12 rounded cursor-pointer border-0 p-0 bg-transparent"
+                        />
+                        <Input 
+                          value={bgColor} 
+                          onChange={(e) => setBgColor(e.target.value)}
+                          placeholder="#000000"
+                          className={`font-mono ${isDark ? 'bg-black/20 border-white/20 text-white' : 'bg-white border-slate-300'}`}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-6">
+                    <div className="space-y-3">
+                      <Label className={`flex items-center space-x-2 ${textPrimary}`}>
+                        <Type className="w-4 h-4" />
+                        <span>Texto do Rodapé</span>
+                      </Label>
+                      <Textarea 
+                        value={footerText}
+                        onChange={(e) => setFooterText(e.target.value)}
+                        placeholder="Deixe em branco para o padrão..."
+                        className={`min-h-[115px] resize-none ${isDark ? 'bg-black/20 border-white/20 text-white' : 'bg-white border-slate-300'}`}
+                      />
+                      <p className={`text-[10px] ${textSecondary}`}>O sistema ajustará automaticamente a cor (preto/branco) para melhor contraste.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <Button 
+                  onClick={handleGerarJornal} 
+                  className={`w-full py-8 text-xl font-bold rounded-xl transition-all shadow-lg ${isDark ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700'} text-white`}
+                >
+                  Gerar Jornal de Ofertas PDF
+                </Button>
+              </div>
+            )}
           </div>
 
-          <div className="lg:col-span-1">
-            <div className={`${cardBg} rounded-2xl p-8 shadow-2xl transition-all duration-300`}>
-              <h2 className={`text-2xl font-bold ${textPrimary} mb-4`}>Status do Processamento</h2>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className={textSecondary}>Arquivo Selecionado:</span>
-                  <span className={`font-medium ${textPrimary}`}>{file?.name || "Nenhum arquivo"}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className={textSecondary}>Status:</span>
-                  {isProcessing ? (
-                    <span className={`font-medium ${accentColor}`}>Processando...</span>
-                  ) : zipPath ? (
-                    <span className={`font-medium ${isDark ? 'text-green-300' : 'text-green-600'}`}>Concluído</span>
-                  ) : error ? (
-                    <span className={`font-medium ${isDark ? 'text-red-300' : 'text-red-600'}`}>Erro</span>
-                  ) : (
-                    <span className={textSecondary}>Aguardando</span>
-                  )}
-                </div>
-                {progress && (
-                  <div className="flex items-center justify-between">
-                    <span className={textSecondary}>Progresso:</span>
-                    <span className={`font-medium ${accentColor}`}>{progress.percentage}%</span>
+          <div className="space-y-6">
+            <div className={`${cardBg} rounded-2xl p-6 border ${borderColor}`}>
+              <h3 className={`font-bold ${textPrimary} mb-4 flex items-center`}><ImageIcon className={`w-5 h-5 mr-2 ${accentColor}`} /> Modelos Suportados</h3>
+              <div className="space-y-3">
+                {["PROMOÇÃO", "QUEDA DE PREÇO", "CUPOM", "CASHBACK", "BC"].map((tipo, i) => (
+                  <div key={i} className={`flex items-center justify-between p-3 rounded-lg ${isDark ? 'bg-black/20' : 'bg-white/50'} border ${borderColor}`}>
+                    <span className={`text-sm font-medium ${textPrimary}`}>{tipo}</span>
+                    <CheckCircle2 className="w-4 h-4 text-green-500" />
                   </div>
-                )}
-                {zipPath && (
-                  <div className="flex items-center justify-between">
-                    <span className={textSecondary}>Caminho do ZIP:</span>
-                    <span className={`font-medium ${textPrimary} truncate max-w-[150px]`}>{zipPath.split("/").pop()}</span>
-                  </div>
-                )}
-                {error && (
-                  <div className="flex items-center justify-between">
-                    <span className={textSecondary}>Mensagem de Erro:</span>
-                    <span className={`font-medium ${isDark ? 'text-red-300' : 'text-red-600'} truncate max-w-[150px]`}>{error}</span>
-                  </div>
-                )}
+                ))}
               </div>
+            </div>
+
+            <div className={`${cardBg} rounded-2xl p-6 border ${borderColor}`}>
+              <h3 className={`font-bold ${textPrimary} mb-4 flex items-center`}><FileText className={`w-5 h-5 mr-2 ${accentColor}`} /> Dicas</h3>
+              <ul className={`text-sm ${textSecondary} space-y-3`}>
+                <li className="flex items-start"><span className={`${accentColor} mr-2 font-bold`}>•</span> Use nomes de logos que já existem no sistema.</li>
+                <li className="flex items-start"><span className={`${accentColor} mr-2 font-bold`}>•</span> A coluna 'categoria' agrupa os cards no jornal.</li>
+                <li className="flex items-start"><span className={`${accentColor} mr-2 font-bold`}>•</span> O valor da promoção agora se ajusta automaticamente.</li>
+              </ul>
             </div>
           </div>
         </div>

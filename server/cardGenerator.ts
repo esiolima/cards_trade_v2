@@ -247,8 +247,24 @@ export class CardGenerator extends EventEmitter {
     return zipPath;
   }
 
-  async generateJornal(excelFilePath: string): Promise<string> {
+  private getContrastColor(hexColor: string): string {
+    // Se não for uma cor válida, assume fundo escuro (texto branco)
+    if (!hexColor || !hexColor.startsWith('#')) return '#ffffff';
+    
+    const r = parseInt(hexColor.slice(1, 3), 16);
+    const g = parseInt(hexColor.slice(3, 5), 16);
+    const b = parseInt(hexColor.slice(5, 7), 16);
+    
+    // Fórmula de luminância relativa
+    const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+    return yiq >= 128 ? '#000000' : '#ffffff';
+  }
+
+  async generateJornal(excelFilePath: string, options: { headerPath?: string, backgroundColor?: string, footerText?: string } = {}): Promise<string> {
     if (!this.browser) throw new Error("Browser not initialized");
+
+    const { headerPath, backgroundColor = "#5a2d0c", footerText } = options;
+    const contrastColor = this.getContrastColor(backgroundColor);
 
     const workbook = xlsx.readFile(excelFilePath);
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
@@ -262,9 +278,24 @@ export class CardGenerator extends EventEmitter {
     });
 
     const vigencia = rows[0]?.VIGÊNCIA || "00/00 a 00/00";
-    const gap = 40;
+    const gap = 80;
     const cardWidth = 700;
     const pageWidth = (cardWidth * 3) + (gap * 4);
+
+    let headerHtml = "";
+    if (headerPath && fs.existsSync(headerPath)) {
+      const headerBase64 = this.imageToBase64(headerPath);
+      headerHtml = `<div class="header-image-container"><img src="${headerBase64}" class="header-image" /></div>`;
+    } else {
+      headerHtml = `
+        <div class="header">
+          <h1 class="header-title">OFERTAS DA SEMANA</h1>
+          <div class="header-date">${vigencia}</div>
+        </div>
+      `;
+    }
+
+    const footerContent = footerText || "OFERTAS SUJEITAS A SAÍREM DO AR A QUALQUER MOMENTO SEM AVISO PRÉVIO. CONFIRA A REGRA E MIX PARTICIPANTE DE CADA AÇÃO.";
 
     let html = `
     <!DOCTYPE html>
@@ -278,19 +309,28 @@ export class CardGenerator extends EventEmitter {
         html, body {
           margin: 0;
           padding: 0;
-          background: #5a2d0c;
+          background: ${backgroundColor};
           font-family: 'Inter', sans-serif;
           width: ${pageWidth}px;
         }
         .header {
-          background: #5a2d0c;
+          background: ${backgroundColor};
           padding: 100px 0;
           text-align: center;
-          color: white;
+          color: ${contrastColor};
           width: 100%;
         }
+        .header-image-container {
+          width: 100%;
+          line-height: 0;
+        }
+        .header-image {
+          width: 100%;
+          height: auto;
+          display: block;
+        }
         .header-title { font-size: 160px; font-weight: 900; margin: 0; letter-spacing: -5px; }
-        .header-date { font-size: 80px; font-weight: 700; margin-top: 40px; color: #f2c94c; }
+        .header-date { font-size: 80px; font-weight: 700; margin-top: 40px; color: ${contrastColor === '#000000' ? '#1a7d00' : '#f2c94c'}; }
         .container { padding: ${gap}px; width: 100%; }
         .categoria-section { margin-bottom: 120px; width: 100%; text-align: center; }
         .tarja-categoria {
@@ -303,14 +343,13 @@ export class CardGenerator extends EventEmitter {
           display: inline-block;
           margin-bottom: 80px;
           text-transform: uppercase;
-          box-shadow: 0 20px 40px rgba(0,0,0,0.5 );
+          box-shadow: 0 20px 40px rgba(0,0,0,0.5);
         }
         .grid {
-          display: flex; /* Alterado de grid para flex */
-          flex-wrap: wrap; /* Permite que os itens quebrem para a próxima linha */
-          justify-content: center; /* Centraliza os itens na linha */
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: center;
           gap: ${gap}px;
-          /* Removido grid-template-columns */
         }
         .card-wrapper {
           width: ${cardWidth}px;
@@ -332,10 +371,9 @@ export class CardGenerator extends EventEmitter {
         }
         .selo-img { width: 100%; height: auto; }
         .footer-legal {
-          padding: 100px 60px;
-          background: #f8f8f8;
-          color: #333;
-          font-size: 32px;
+          padding: 60px;
+          color: ${contrastColor};
+          font-size: 16px;
           text-align: center;
           font-weight: 700;
           text-transform: uppercase;
@@ -357,10 +395,7 @@ export class CardGenerator extends EventEmitter {
       </style>
     </head>
     <body>
-      <div class="header">
-        <h1 class="header-title">OFERTAS DA SEMANA</h1>
-        <div class="header-date">${vigencia}</div>
-      </div>
+      ${headerHtml}
       <div class="container">
     `;
 
@@ -403,8 +438,6 @@ export class CardGenerator extends EventEmitter {
           const seloBase64 = seloImg ? this.imageToBase64(path.join(SELOS_DIR, seloImg)) : "";
 
           const segmentoRaw = row.segmento && String(row.segmento).trim() !== "" ? String(row.segmento).trim() : "";
-
-          // Se for promoção, ignorar o campo cupom
           const cupomFinal = tipo === 'promocao' ? '' : String(row.cupom ?? "");
 
           let processedCardHtml = cardHtml
@@ -437,8 +470,8 @@ export class CardGenerator extends EventEmitter {
               }).join(', ');
           });
 
-          // Injetar classes de auto-shrink
           cardBody = cardBody.replace(/class="[^"]*valor[^"]*"/i, (m) => m.replace('class="', `class="auto-shrink-valor-${cardId} `));
+          cardBody = cardBody.replace(/id="valor-texto"/i, `id="valor-texto" class="auto-shrink-valor-${cardId}"`);
           cardBody = cardBody.replace(/class="[^"]*cupom-text[^"]*"/i, (m) => m.replace('class="', `class="auto-shrink-cupom-${cardId} `));
           cardBody = cardBody.replace(/id="cupom-text"/i, `id="cupom-text" class="auto-shrink-cupom-${cardId}"`);
 
@@ -452,7 +485,7 @@ export class CardGenerator extends EventEmitter {
           ` : '';
 
           const promoAjusteStyle = tipo === 'promocao' ? `
-            #${cardId} .valor { 
+            #${cardId} .valor-texto, #${cardId} .valor { 
               white-space: normal !important; 
               word-break: break-word !important; 
               line-height: 1.1 !important;
@@ -482,7 +515,7 @@ export class CardGenerator extends EventEmitter {
                   padding: 0;
                   overflow: hidden;
                 }
-                #${cardId} .valor { font-weight: 900 !important; font-family: 'Inter', sans-serif !important; }
+                #${cardId} .valor-texto, #${cardId} .valor { font-weight: 900 !important; font-family: 'Inter', sans-serif !important; }
                 #${cardId} .cupom-text, #${cardId} #cupom-text { font-family: 'Inter', sans-serif !important; }
                 ${scopedStyle}
                 ${logoAjusteStyle}
@@ -505,17 +538,15 @@ export class CardGenerator extends EventEmitter {
     html += `
       </div>
       <div class="footer-legal">
-        OFERTAS SUJEITAS A SAÍREM DO AR A QUALQUER MOMENTO SEM AVISO PRÉVIO. CONFIRA A REGRA E MIX PARTICIPANTE DE CADA AÇÃO.
+        ${footerContent}
       </div>
       <script>
-        // Função de auto-shrink que será chamada pelo Puppeteer
         async function runAutoShrink() {
           const cards = document.querySelectorAll('.card-wrapper');
           for (const card of Array.from(cards)) {
             const cardId = card.id;
             const tipo = card.getAttribute('data-tipo');
             
-            // Ajustar Valor
             const valor = card.querySelector('.auto-shrink-valor-' + cardId);
             if (valor) {
               const maxH = tipo === 'promocao' ? 480 : 400;
@@ -525,7 +556,6 @@ export class CardGenerator extends EventEmitter {
                  valor.style.whiteSpace = 'normal';
                  valor.style.width = '600px';
                  valor.style.display = 'block';
-                 // Ponto de partida 50% menor para garantir que comece cabendo ou quase cabendo
                  const currentFs = parseInt(window.getComputedStyle(valor).fontSize);
                  valor.style.fontSize = (currentFs * 0.5) + 'px';
               }
@@ -540,7 +570,6 @@ export class CardGenerator extends EventEmitter {
               }
             }
 
-            // Ajustar Cupom
             if (tipo !== 'promocao') {
               const cupom = card.querySelector('.auto-shrink-cupom-' + cardId);
               if (cupom) {
@@ -563,18 +592,14 @@ export class CardGenerator extends EventEmitter {
     `;
 
     const filePath = path.join(OUTPUT_DIR, "jornal.pdf");
-
     const page = await this.browser.newPage();
     await page.setViewport({ width: pageWidth, height: 10000 });
-    
     await page.setContent(html, { waitUntil: "networkidle0" });
     await page.evaluateHandle('document.fonts.ready');
     
-    // AUTO-SHRINK VIA PUPPETEER (Execução explícita no cliente e espera)
     await page.evaluate(async () => {
       // @ts-ignore
       await runAutoShrink();
-      // Delay extra para garantir a renderização
       await new Promise(r => setTimeout(r, 500));
     });
 
@@ -589,7 +614,6 @@ export class CardGenerator extends EventEmitter {
     });
 
     await page.close();
-
     return filePath;
   }
 

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=700, initial-scale=1.0" />
-<title>Queda de Preço</title>
+<title>Promoção</title>
 
 <style>
 
@@ -103,10 +103,11 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 25px;
+  gap: 20px;
+  flex-grow: 1;
+  justify-content: center;
 }
 
-/* 🔴 TEXTO DINÂMICO AJUSTADO */
 .texto-topo {
   font-size: 50px;
   line-height: 1.1;
@@ -117,18 +118,23 @@ body {
   overflow: hidden;
 }
 
-/* VALOR */
+/* VALOR DINÂMICO */
 .valor-container {
   display: flex;
   justify-content: center;
-  align-items: flex-end;
+  align-items: center;
+  width: 600px;
+  height: 300px;
+  overflow: hidden;
 }
 
 .valor-texto {
   font-weight: 900;
-  font-size: clamp(140px, 22vw, 260px);
-  line-height: 1;
-  white-space: nowrap;
+  font-size: 260px;
+  line-height: 0.9;
+  text-align: center;
+  word-break: break-word;
+  width: 100%;
 }
 
 .desconto {
@@ -136,7 +142,6 @@ body {
   font-weight: 700;
 }
 
-/* 🔴 COMPLEMENTO AJUSTADO */
 .complemento {
   font-size: 36px;
   line-height: 1.1;
@@ -158,6 +163,7 @@ body {
 /* RODAPÉ */
 .rodape {
   text-align: center;
+  margin-top: 20px;
 }
 
 .uf {
@@ -188,7 +194,7 @@ body {
     </div>
 
     <div class="tarja">
-      QUEDA DE PREÇO
+      OFERTA ESPECIAL
     </div>
   </div>
 
@@ -198,9 +204,9 @@ body {
       {{TEXTO}}
     </div>
 
-    <div class="valor-container">
-      <div class="valor-texto">
-        {{VALOR}}%
+    <div class="valor-container" id="valor-container">
+      <div class="valor-texto" id="valor-texto">
+        {{VALOR}}
       </div>
     </div>
 
@@ -232,21 +238,29 @@ body {
 <script>
 window.addEventListener("load", function () {
 
-  function autoFit(el, max = 60, min = 16) {
+  function autoFit(el, max = 60, min = 16, maxLines = 100) {
     let size = max;
     el.style.fontSize = size + "px";
+    el.style.lineHeight = "0.9";
+
+    const containerHeight = el.parentElement.clientHeight;
+    const containerWidth = el.parentElement.clientWidth;
 
     while (
-      (el.scrollHeight > el.clientHeight || el.scrollWidth > el.clientWidth) &&
+      (el.scrollHeight > containerHeight || el.scrollWidth > containerWidth) &&
       size > min
     ) {
-      size -= 1;
+      size -= 2;
       el.style.fontSize = size + "px";
     }
   }
 
   autoFit(document.getElementById("texto-topo"), 50, 18);
   autoFit(document.getElementById("complemento"), 36, 16);
+  
+  // Ajuste dinâmico para o valor em até 3 linhas
+  const valorEl = document.getElementById("valor-texto");
+  autoFit(valorEl, 260, 80);
 
   /* SEGMENTO */
   const segmento = document.getElementById("segmento-bloco");

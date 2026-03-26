@@ -67,10 +67,13 @@ export const cardRouter = router({
       z.object({
         filePath: z.string(),
         sessionId: z.string(),
+        headerPath: z.string().optional(),
+        backgroundColor: z.string().optional(),
+        footerText: z.string().optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const { filePath, sessionId } = input;
+      const { filePath, sessionId, headerPath, backgroundColor, footerText } = input;
 
       if (!fs.existsSync(filePath)) {
         throw new TRPCError({
@@ -84,7 +87,11 @@ export const cardRouter = router({
         activeGenerators.set(sessionId, generator);
         await generator.initialize();
 
-        const jornalPath = await generator.generateJornal(filePath);
+        const jornalPath = await generator.generateJornal(filePath, {
+          headerPath,
+          backgroundColor,
+          footerText
+        });
 
         await generator.close();
         activeGenerators.delete(sessionId);
