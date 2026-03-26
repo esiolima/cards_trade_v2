@@ -116,10 +116,8 @@ export default function CardGenerator() {
       <div className="max-w-5xl mx-auto">
         <div className="flex items-center justify-between mb-16">
           <div className="flex items-center space-x-4">
-            <img src="/martins-logo.png" alt="Martins" className="h-12 object-contain" />
             <div>
               <h1 className={`text-3xl font-bold ${textPrimary}`}>Gerador de Cards</h1>
-              <p className={`text-sm ${textSecondary}`}>Núcleo de Comunicação e Marketing / Trade Martins</p>
             </div>
           </div>
           <button onClick={() => setIsDark(!isDark)} className={`p-3 rounded-full transition-all duration-300 backdrop-blur-sm ${isDark ? "bg-white/10 hover:bg-white/20 text-yellow-400" : "bg-black/10 hover:bg-black/20 text-slate-700"}`}>
@@ -202,7 +200,7 @@ export default function CardGenerator() {
                   </div>
                   <div className={`${isDark ? 'bg-green-500/20 border-green-400/50' : 'bg-green-500/10 border-green-500/20'} rounded-lg p-6 border`}><div className="flex items-center justify-between"><span className={`font-medium ${isDark ? 'text-green-200' : 'text-green-800'}`}>Cards Gerados</span><span className={`text-3xl font-bold ${isDark ? 'text-green-300' : 'text-green-600'}`}>{progress?.total}</span></div></div>
                   <Button onClick={handleDownload} className="w-full bg-green-600 hover:bg-green-500 text-white py-6 text-lg font-semibold rounded-lg transition-all duration-300 flex items-center justify-center space-x-2"><Download className="w-5 h-5" /><span>Baixar Cards (ZIP)</span></Button>
-                  <Button onClick={() => { setFile(null); setZipPath(null); setProgress(null); setError(null); setOriginalFileName(null); }} className={`w-full py-6 text-lg font-semibold transition-all duration-300 ${isDark ? 'bg-white/10 hover:bg-white/20 text-white' : 'bg-black/5 hover:bg-black/10 text-slate-800'}`}>Processar Outro Arquivo</Button>
+                  <Button onClick={() => { setFile(null); setZipPath(null); setProgress(null); setError(null); setOriginalFileName(null); }} className={`w-full text-white py-6 text-lg font-semibold rounded-lg transition-all duration-300 ${isDark ? 'bg-cyan-500/80 hover:bg-cyan-500' : 'bg-blue-600 hover:bg-blue-700'}`}>Novo Processamento</Button>
                 </div>
               )}
             </div>
@@ -229,7 +227,7 @@ export default function CardGenerator() {
 
         <div className={`mt-16 pt-8 border-t ${borderColor} text-center`}>
           <p className={`text-sm ${textSecondary}`}>
-            Desenvolvido por Esio Lima - Versão 2.3
+            Desenvolvido por Esio Lima - Versão 2.5
           </p>
         </div>
       </div>
