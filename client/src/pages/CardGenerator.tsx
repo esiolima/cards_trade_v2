@@ -32,10 +32,13 @@ interface ProgressData {
 export default function CardGenerator() {
   const [file, setFile] = useState<File | null>(null);
   const [headerFile, setHeaderFile] = useState<File | null>(null);
-  const [bgColor, setBgColor] = useState("#5a2d0c");
-  const [categoryBoxColor, setCategoryBoxColor] = useState("#1f7a3f");
-  const [footerText, setFooterText] = useState("");
   
+  // Persistência com localStorage
+  const [bgColor, setBgColor] = useState(() => localStorage.getItem("jornal_bgColor") || "#5a2d0c");
+  const [categoryBoxColor, setCategoryBoxColor] = useState(() => localStorage.getItem("jornal_categoryBoxColor") || "#1f7a3f");
+  const [footerText, setFooterText] = useState(() => localStorage.getItem("jornal_footerText") || "");
+  const [lastHeaderName, setLastHeaderName] = useState(() => localStorage.getItem("jornal_lastHeaderName") || "");
+
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState<ProgressData | null>(null);
   const [zipPath, setZipPath] = useState<string | null>(null);
@@ -51,8 +54,18 @@ export default function CardGenerator() {
   const generateCardsMutation = trpc.card.generateCards.useMutation();
   const generateJornalMutation = trpc.card.generateJornal.useMutation();
 
+  // Efeito para salvar no localStorage sempre que houver alteração
   useEffect(() => {
-    // Usar caminhos relativos para socket.io
+    localStorage.setItem("jornal_bgColor", bgColor);
+    localStorage.setItem("jornal_categoryBoxColor", categoryBoxColor);
+    localStorage.setItem("jornal_footerText", footerText);
+    if (headerFile) {
+      localStorage.setItem("jornal_lastHeaderName", headerFile.name);
+      setLastHeaderName(headerFile.name);
+    }
+  }, [bgColor, categoryBoxColor, footerText, headerFile]);
+
+  useEffect(() => {
     const socket = io({ 
       reconnection: true, 
       reconnectionDelay: 1000, 
@@ -106,7 +119,6 @@ export default function CardGenerator() {
     try {
       const formData = new FormData();
       formData.append("file", file);
-      // Usar caminho relativo
       const uploadResponse = await fetch("/api/upload", { method: "POST", body: formData });
       if (!uploadResponse.ok) throw new Error("Erro ao fazer upload do arquivo");
       const { filePath, fileName } = await uploadResponse.json();
@@ -134,7 +146,6 @@ export default function CardGenerator() {
       if (headerFile) {
         const formData = new FormData();
         formData.append("file", headerFile);
-        // Usar caminho relativo
         const uploadResponse = await fetch("/api/upload", { method: "POST", body: formData });
         if (uploadResponse.ok) {
           const data = await uploadResponse.json();
@@ -152,7 +163,6 @@ export default function CardGenerator() {
       });
 
       if (result?.jornalPath) {
-        // Usar caminho relativo
         window.open(
           `/api/download?zipPath=${encodeURIComponent(result.jornalPath)}`,
           "_blank"
@@ -278,11 +288,11 @@ export default function CardGenerator() {
               )}
             </div>
 
-            {/* PERSONALIZAÇÃO SEMPRE VISÍVEL */}
+            {/* PERSONALIZAÇÃO SEMPRE VISÍVEL E PERSISTENTE */}
             <div className={`${cardBg} rounded-2xl p-8 shadow-2xl transition-all duration-300 space-y-8`}>
               <div>
                 <h2 className={`text-2xl font-bold ${textPrimary} mb-2`}>2. Personalize seu Jornal</h2>
-                <p className={textSecondary}>Configure o visual do jornal consolidado</p>
+                <p className={textSecondary}>Configure o visual do jornal consolidado (Lembrando suas últimas escolhas)</p>
               </div>
 
               <div className="grid md:grid-cols-2 gap-8">
@@ -304,7 +314,9 @@ export default function CardGenerator() {
                       ) : (
                         <div className="flex flex-col items-center space-y-1">
                           <Upload className={`w-5 h-5 ${textSecondary}`} />
-                          <span className={`text-xs ${textSecondary}`}>Subir imagem (PDF, PNG, JPG)</span>
+                          <span className={`text-xs ${textSecondary}`}>
+                            {lastHeaderName ? `Último: ${lastHeaderName}` : "Subir imagem (PDF, PNG, JPG)"}
+                          </span>
                         </div>
                       )}
                       <input id="header-input" type="file" accept="image/*,.pdf" onChange={handleHeaderSelect} className="hidden" />
