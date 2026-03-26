@@ -7,21 +7,7 @@ import { CardGenerator } from "../cardGenerator";
 import net from "net";
 import path from "path";
 import fs from "fs";
-import { createExpressMiddleware } from "@trpc/server/adapters/express";
-import { appRouter } from "../routers/_app";
-import { createContext } from "./context";
 import { Server as SocketIOServer } from "socket.io";
-
-async function findAvailablePort(startPort: number): Promise<number> {
-  return new Promise((resolve) => {
-    const server = net.createServer();
-    server.listen(startPort, () => {
-      const { port } = server.address() as net.AddressInfo;
-      server.close(() => resolve(port));
-    });
-    server.on("error", () => resolve(findAvailablePort(startPort + 1)));
-  });
-}
 
 async function startServer() {
   const app = express();
@@ -64,6 +50,7 @@ async function startServer() {
       const zipPath = await generator.generateZip();
       res.download(zipPath, "cards_individuais.zip");
     } catch (error: any) {
+      console.error("Erro ao gerar ZIP:", error);
       res.status(500).json({ error: "Erro ao gerar ZIP" });
     }
   });
@@ -98,8 +85,6 @@ async function startServer() {
   generator.on("progress", (data) => {
     io.emit("processProgress", data);
   });
-
-  app.use("/api/trpc", createExpressMiddleware({ router: appRouter, createContext }));
 
   if (process.env.NODE_ENV === "production") {
     const clientDistPath = path.join(process.cwd(), "dist", "client");
