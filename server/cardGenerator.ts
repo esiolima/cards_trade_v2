@@ -1,6 +1,6 @@
 import path from "path";
 import fs from "fs";
-import puppeteer, { Browser, Page } from "puppeteer-core";
+import puppeteer, { Browser } from "puppeteer-core";
 import archiver from "archiver";
 import xlsx from "xlsx";
 import { EventEmitter } from "events";
@@ -26,7 +26,7 @@ export class CardGenerator extends EventEmitter {
       console.log("Iniciando navegador Puppeteer...");
       this.browser = await puppeteer.launch({
         executablePath:
-          process.env.PUPPETEER_EXECUTABLE_PATH || "/usr/bin/chromium-browser",
+          process.env.PUPPETEER_EXECUTABLE_PATH || "/usr/bin/chromium",
         args: [
           "--no-sandbox", 
           "--disable-setuid-sandbox",
@@ -91,9 +91,55 @@ export class CardGenerator extends EventEmitter {
 
   imageToBase64(imagePath: string): string {
     if (!imagePath || !fs.existsSync(imagePath)) return "";
-    const ext = path.extname(imagePath).replace(".", "");
+    const ext = path.extname(imagePath).replace(".", "").toLowerCase();
     const buffer = fs.readFileSync(imagePath);
-    return `data:image/${ext};base64,${buffer.toString("base64")}`;
+    
+    let mimeType = `image/${ext}`;
+    if (ext === "svg") mimeType = "image/svg+xml";
+    if (ext === "jpg") mimeType = "image/jpeg";
+
+    return `data:${mimeType};base64,${buffer.toString("base64")}`;
+  }
+
+  /**
+   * Busca inteligente de logo (Melhorada):
+   * 1. Tenta o nome exato fornecido.
+   * 2. Tenta o nome sem espaços e em minúsculo com várias extensões.
+   * 3. Tenta buscar por prefixo (se o arquivo começa com o que foi digitado).
+   * 4. Retorna 'blank.png' se nada for encontrado.
+   */
+  private findLogoFile(logoName: string): string {
+    if (!logoName || String(logoName).trim() === "") return "blank.png";
+
+    const cleanName = String(logoName).trim();
+    const extensions = [".png", ".jpg", ".jpeg", ".webp", ".svg"];
+
+    if (fs.existsSync(path.join(LOGOS_DIR, cleanName))) {
+      return cleanName;
+    }
+
+    const searchName = cleanName.toLowerCase();
+    const filesInLogos = fs.readdirSync(LOGOS_DIR);
+
+    for (const ext of extensions) {
+      const target = searchName.endsWith(ext) ? searchName : searchName + ext;
+      const found = filesInLogos.find(f => f.toLowerCase() === target);
+      if (found) return found;
+    }
+
+    const validFiles = filesInLogos.filter(f => {
+      const ext = path.extname(f).toLowerCase();
+      return extensions.includes(ext);
+    });
+
+    const prefixMatch = validFiles.find(f => {
+      const baseName = path.parse(f).name.toLowerCase();
+      return baseName.startsWith(searchName);
+    });
+
+    if (prefixMatch) return prefixMatch;
+
+    return "blank.png";
   }
 
   async processExcel(excelFilePath: string): Promise<any[]> {
@@ -132,13 +178,7 @@ export class CardGenerator extends EventEmitter {
           valorFinal = valorFinal.replace(/%/g, "").trim();
         }
 
-        let logoFile = "blank.png";
-        if (row.logo && String(row.logo).trim() !== "") {
-          const possibleLogo = String(row.logo).trim();
-          const possiblePath = path.join(LOGOS_DIR, possibleLogo);
-          if (fs.existsSync(possiblePath)) logoFile = possibleLogo;
-        }
-
+        const logoFile = this.findLogoFile(row.logo);
         const logoBase64 = this.imageToBase64(path.join(LOGOS_DIR, logoFile));
         const seloBase64 = row.selo ? this.imageToBase64(path.join(SELOS_DIR, row.selo.toLowerCase() === "nova" ? "acaonova.png" : row.selo.toLowerCase() === "renovada" ? "acaorenovada.png" : "")) : "";
         const segmentoRaw = row.segmento && String(row.segmento).trim() !== "" ? String(row.segmento).trim() : "";
@@ -234,7 +274,7 @@ export class CardGenerator extends EventEmitter {
     await this.initialize();
     
     const excelFilePath = path.join(process.cwd(), "uploads_excel", "current_planilha.xlsx");
-    if (!fs.existsSync(excelFilePath)) throw new Error("Nenhuma planilha encontrada. Por favor, processe a planilha no Passo 1 primeiro.");
+    if (!fs.existsSync(excelFilePath)) throw new Error("Nenhuma planilha encontrada. Por favor, envie a planilha primeiro.");
 
     const { backgroundColor = "#1a365d", categoryBoxColor = "#2563eb", footerText } = options;
     const contrastColor = this.getContrastColor(backgroundColor);
@@ -277,15 +317,12 @@ export class CardGenerator extends EventEmitter {
         let cardHtml = fs.readFileSync(templatePath, "utf8");
         let valorFinal = String(row.valor ?? "");
         if (tipo !== "promocao") valorFinal = valorFinal.replace(/%/g, "").trim();
-        let logoFile = "blank.png";
-        if (row.logo && String(row.logo).trim() !== "") {
-          const possibleLogo = String(row.logo).trim();
-          const possiblePath = path.join(LOGOS_DIR, possibleLogo);
-          if (fs.existsSync(possiblePath)) logoFile = possibleLogo;
-        }
+        
+        const logoFile = this.findLogoFile(row.logo);
         const logoBase64 = this.imageToBase64(path.join(LOGOS_DIR, logoFile));
         const seloBase64 = row.selo ? this.imageToBase64(path.join(SELOS_DIR, row.selo.toLowerCase() === "nova" ? "acaonova.png" : row.selo.toLowerCase() === "renovada" ? "acaorenovada.png" : "")) : "";
         const segmentoRaw = row.segmento && String(row.segmento).trim() !== "" ? String(row.segmento).trim() : "";
+        
         cardHtml = cardHtml.replaceAll("{{TEXTO}}", String(row.texto ?? "")).replaceAll("{{VALOR}}", valorFinal).replaceAll("{{COMPLEMENTO}}", String(row.complemento ?? "")).replaceAll("{{LEGAL}}", String(row.legal ?? ""))
           .replaceAll("{{SEGMENTO}}", segmentoRaw)
           .replaceAll("{{CUPOM}}", String(row.cupom ?? ""))
@@ -294,8 +331,6 @@ export class CardGenerator extends EventEmitter {
           .replaceAll("{{LOGO}}", logoBase64)
           .replaceAll("{{SELO}}", seloBase64);
         
-        // Em vez de iframe, inserimos o conteúdo HTML do card diretamente dentro de um wrapper.
-        // Isso evita problemas de segurança e garante que o PDF seja gerado corretamente.
         html += `<div class="card-wrapper"><div class="card-content-inner">${cardHtml}</div></div>`;
       }
       html += `</div></div>`;
