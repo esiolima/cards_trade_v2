@@ -52,7 +52,14 @@ export default function CardGenerator() {
   const generateJornalMutation = trpc.card.generateJornal.useMutation();
 
   useEffect(() => {
-    const socket = io({ reconnection: true, reconnectionDelay: 1000, reconnectionDelayMax: 5000, reconnectionAttempts: 5 });
+    // Usar caminhos relativos para socket.io
+    const socket = io({ 
+      reconnection: true, 
+      reconnectionDelay: 1000, 
+      reconnectionDelayMax: 5000, 
+      reconnectionAttempts: 5,
+      path: "/socket.io"
+    });
     socket.on("connect", () => { console.log("Connected to server"); socket.emit("join", sessionId); });
     socket.on("progress", (data: ProgressData) => setProgress(data));
     socket.on("error", (message: string) => { setError(message); setIsProcessing(false); });
@@ -99,6 +106,7 @@ export default function CardGenerator() {
     try {
       const formData = new FormData();
       formData.append("file", file);
+      // Usar caminho relativo
       const uploadResponse = await fetch("/api/upload", { method: "POST", body: formData });
       if (!uploadResponse.ok) throw new Error("Erro ao fazer upload do arquivo");
       const { filePath, fileName } = await uploadResponse.json();
@@ -114,7 +122,10 @@ export default function CardGenerator() {
   };
 
   const handleGerarJornal = async () => {
-    if (!uploadedFilePath) return;
+    if (!uploadedFilePath) {
+      setError("Por favor, processe a planilha primeiro");
+      return;
+    }
     setIsProcessing(true);
     setError(null);
 
@@ -123,6 +134,7 @@ export default function CardGenerator() {
       if (headerFile) {
         const formData = new FormData();
         formData.append("file", headerFile);
+        // Usar caminho relativo
         const uploadResponse = await fetch("/api/upload", { method: "POST", body: formData });
         if (uploadResponse.ok) {
           const data = await uploadResponse.json();
@@ -140,6 +152,7 @@ export default function CardGenerator() {
       });
 
       if (result?.jornalPath) {
+        // Usar caminho relativo
         window.open(
           `/api/download?zipPath=${encodeURIComponent(result.jornalPath)}`,
           "_blank"
@@ -265,107 +278,107 @@ export default function CardGenerator() {
               )}
             </div>
 
-            {uploadedFilePath && !isProcessing && (
-              <div className={`${cardBg} rounded-2xl p-8 shadow-2xl transition-all duration-300 space-y-8`}>
-                <div>
-                  <h2 className={`text-2xl font-bold ${textPrimary} mb-2`}>2. Personalize seu Jornal</h2>
-                  <p className={textSecondary}>Configure o visual do jornal consolidado</p>
-                </div>
-
-                <div className="grid md:grid-cols-2 gap-8">
-                  <div className="space-y-6">
-                    <div className="space-y-3">
-                      <Label className={`flex items-center space-x-2 ${textPrimary}`}>
-                        <Layout className="w-4 h-4" />
-                        <span>Cabeçalho (Header)</span>
-                      </Label>
-                      <div 
-                        onClick={() => document.getElementById("header-input")?.click()}
-                        className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-all ${uploadBg} ${headerFile ? 'border-green-500' : borderColor}`}
-                      >
-                        {headerFile ? (
-                          <div className="flex items-center justify-center space-x-2">
-                            <ImageIcon className="w-4 h-4 text-green-500" />
-                            <span className={`text-sm truncate max-w-[150px] ${textPrimary}`}>{headerFile.name}</span>
-                          </div>
-                        ) : (
-                          <div className="flex flex-col items-center space-y-1">
-                            <Upload className={`w-5 h-5 ${textSecondary}`} />
-                            <span className={`text-xs ${textSecondary}`}>Subir imagem (PDF, PNG, JPG)</span>
-                          </div>
-                        )}
-                        <input id="header-input" type="file" accept="image/*,.pdf" onChange={handleHeaderSelect} className="hidden" />
-                      </div>
-                    </div>
-
-                    <div className="space-y-3">
-                      <Label className={`flex items-center space-x-2 ${textPrimary}`}>
-                        <Palette className="w-4 h-4" />
-                        <span>Cor de Fundo</span>
-                      </Label>
-                      <div className="flex items-center space-x-3">
-                        <input 
-                          type="color" 
-                          value={bgColor} 
-                          onChange={(e) => setBgColor(e.target.value)}
-                          className="w-12 h-12 rounded cursor-pointer border-0 p-0 bg-transparent"
-                        />
-                        <Input 
-                          value={bgColor} 
-                          onChange={(e) => setBgColor(e.target.value)}
-                          placeholder="#000000"
-                          className={`font-mono ${isDark ? 'bg-black/20 border-white/20 text-white' : 'bg-white border-slate-300'}`}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-3">
-                      <Label className={`flex items-center space-x-2 ${textPrimary}`}>
-                        <Palette className="w-4 h-4" />
-                        <span>Cor das Categorias</span>
-                      </Label>
-                      <div className="flex items-center space-x-3">
-                        <input 
-                          type="color" 
-                          value={categoryBoxColor} 
-                          onChange={(e) => setCategoryBoxColor(e.target.value)}
-                          className="w-12 h-12 rounded cursor-pointer border-0 p-0 bg-transparent"
-                        />
-                        <Input 
-                          value={categoryBoxColor} 
-                          onChange={(e) => setCategoryBoxColor(e.target.value)}
-                          placeholder="#1f7a3f"
-                          className={`font-mono ${isDark ? 'bg-black/20 border-white/20 text-white' : 'bg-white border-slate-300'}`}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-6">
-                    <div className="space-y-3">
-                      <Label className={`flex items-center space-x-2 ${textPrimary}`}>
-                        <Type className="w-4 h-4" />
-                        <span>Texto do Rodapé</span>
-                      </Label>
-                      <Textarea 
-                        value={footerText}
-                        onChange={(e) => setFooterText(e.target.value)}
-                        placeholder="Deixe em branco para o padrão..."
-                        className={`min-h-[115px] resize-none ${isDark ? 'bg-black/20 border-white/20 text-white' : 'bg-white border-slate-300'}`}
-                      />
-                      <p className={`text-[10px] ${textSecondary}`}>O sistema ajustará automaticamente a cor (preto/branco) para melhor contraste.</p>
-                    </div>
-                  </div>
-                </div>
-
-                <Button 
-                  onClick={handleGerarJornal} 
-                  className={`w-full py-8 text-xl font-bold rounded-xl transition-all shadow-lg ${isDark ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700'} text-white`}
-                >
-                  Gerar Jornal de Ofertas PDF
-                </Button>
+            {/* PERSONALIZAÇÃO SEMPRE VISÍVEL */}
+            <div className={`${cardBg} rounded-2xl p-8 shadow-2xl transition-all duration-300 space-y-8`}>
+              <div>
+                <h2 className={`text-2xl font-bold ${textPrimary} mb-2`}>2. Personalize seu Jornal</h2>
+                <p className={textSecondary}>Configure o visual do jornal consolidado</p>
               </div>
-            )}
+
+              <div className="grid md:grid-cols-2 gap-8">
+                <div className="space-y-6">
+                  <div className="space-y-3">
+                    <Label className={`flex items-center space-x-2 ${textPrimary}`}>
+                      <Layout className="w-4 h-4" />
+                      <span>Cabeçalho (Header)</span>
+                    </Label>
+                    <div 
+                      onClick={() => document.getElementById("header-input")?.click()}
+                      className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-all ${uploadBg} ${headerFile ? 'border-green-500' : borderColor}`}
+                    >
+                      {headerFile ? (
+                        <div className="flex items-center justify-center space-x-2">
+                          <ImageIcon className="w-4 h-4 text-green-500" />
+                          <span className={`text-sm truncate max-w-[150px] ${textPrimary}`}>{headerFile.name}</span>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center space-y-1">
+                          <Upload className={`w-5 h-5 ${textSecondary}`} />
+                          <span className={`text-xs ${textSecondary}`}>Subir imagem (PDF, PNG, JPG)</span>
+                        </div>
+                      )}
+                      <input id="header-input" type="file" accept="image/*,.pdf" onChange={handleHeaderSelect} className="hidden" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label className={`flex items-center space-x-2 ${textPrimary}`}>
+                      <Palette className="w-4 h-4" />
+                      <span>Cor de Fundo</span>
+                    </Label>
+                    <div className="flex items-center space-x-3">
+                      <input 
+                        type="color" 
+                        value={bgColor} 
+                        onChange={(e) => setBgColor(e.target.value)}
+                        className="w-12 h-12 rounded cursor-pointer border-0 p-0 bg-transparent"
+                      />
+                      <Input 
+                        value={bgColor} 
+                        onChange={(e) => setBgColor(e.target.value)}
+                        placeholder="#000000"
+                        className={`font-mono ${isDark ? 'bg-black/20 border-white/20 text-white' : 'bg-white border-slate-300'}`}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label className={`flex items-center space-x-2 ${textPrimary}`}>
+                      <Palette className="w-4 h-4" />
+                      <span>Cor das Categorias</span>
+                    </Label>
+                    <div className="flex items-center space-x-3">
+                      <input 
+                        type="color" 
+                        value={categoryBoxColor} 
+                        onChange={(e) => setCategoryBoxColor(e.target.value)}
+                        className="w-12 h-12 rounded cursor-pointer border-0 p-0 bg-transparent"
+                      />
+                      <Input 
+                        value={categoryBoxColor} 
+                        onChange={(e) => setCategoryBoxColor(e.target.value)}
+                        placeholder="#1f7a3f"
+                        className={`font-mono ${isDark ? 'bg-black/20 border-white/20 text-white' : 'bg-white border-slate-300'}`}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  <div className="space-y-3">
+                    <Label className={`flex items-center space-x-2 ${textPrimary}`}>
+                      <Type className="w-4 h-4" />
+                      <span>Texto do Rodapé</span>
+                    </Label>
+                    <Textarea 
+                      value={footerText}
+                      onChange={(e) => setFooterText(e.target.value)}
+                      placeholder="Deixe em branco para o padrão..."
+                      className={`min-h-[115px] resize-none ${isDark ? 'bg-black/20 border-white/20 text-white' : 'bg-white border-slate-300'}`}
+                    />
+                    <p className={`text-[10px] ${textSecondary}`}>O sistema ajustará automaticamente a cor (preto/branco) para melhor contraste.</p>
+                  </div>
+                </div>
+              </div>
+
+              <Button 
+                onClick={handleGerarJornal} 
+                disabled={!uploadedFilePath || isProcessing}
+                className={`w-full py-8 text-xl font-bold rounded-xl transition-all shadow-lg ${isDark ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500' : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700'} text-white disabled:opacity-50`}
+              >
+                {uploadedFilePath ? "Gerar Jornal de Ofertas PDF" : "Processe a planilha primeiro"}
+              </Button>
+            </div>
           </div>
 
           <div className="space-y-6">

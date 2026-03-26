@@ -42,5 +42,5 @@ RUN npm install --legacy-peer-deps
 COPY . .
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 RUN npm run build
-EXPOSE 3000
+EXPOSE 8080
 CMD ["npm", "start"]
