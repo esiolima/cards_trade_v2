@@ -12,19 +12,24 @@ if (!fs.existsSync(LOGOS_DIR)) {
 }
 
 export const logoRouter = router({
-  // List all logos
+  // List all logos with metadata
   listLogos: publicProcedure.query(async () => {
     try {
       const files = fs.readdirSync(LOGOS_DIR);
       const logos = files
         .filter((file) => {
           const ext = path.extname(file).toLowerCase();
-          return [".png", ".jpg", ".jpeg"].includes(ext);
+          return [".png", ".jpg", ".jpeg", ".webp", ".svg"].includes(ext);
         })
-        .map((name) => ({
-          name,
-          path: `/logos/${name}`,
-        }));
+        .map((name) => {
+          const filePath = path.join(LOGOS_DIR, name);
+          const stats = fs.statSync(filePath);
+          return {
+            name,
+            path: `/logos/${name}`,
+            mtime: stats.mtime.getTime(), // Data de modificação para ordenação
+          };
+        });
 
       return { logos };
     } catch (error) {

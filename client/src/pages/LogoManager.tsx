@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from "react";
-import { Upload, AlertCircle, CheckCircle2, ArrowLeft, Sun, Moon, Trash2, HelpCircle } from "lucide-react";
+import { useState, useRef, useEffect, useMemo } from "react";
+import { Upload, AlertCircle, CheckCircle2, ArrowLeft, Sun, Moon, Trash2, HelpCircle, SortAsc, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import { useLocation } from "wouter";
@@ -7,12 +7,16 @@ import { useLocation } from "wouter";
 interface Logo {
   name: string;
   path: string;
+  mtime?: number; // Data de modificação vinda do backend
 }
+
+type SortOption = "name" | "date";
 
 export default function LogoManager() {
   const [, navigate] = useLocation();
 
   const [logos, setLogos] = useState<Logo[]>([]);
+  const [sortBy, setSortBy] = useState<SortOption>("name");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -28,9 +32,23 @@ export default function LogoManager() {
     }
   }, [logosData]);
 
+  // Lógica de Ordenação
+  const sortedLogos = useMemo(() => {
+    const filtered = logos.filter(logo => logo.name !== "blank.png");
+    
+    return [...filtered].sort((a, b) => {
+      if (sortBy === "name") {
+        return a.name.localeCompare(b.name);
+      } else {
+        // Ordenar por data (mais recentes primeiro)
+        return (b.mtime || 0) - (a.mtime || 0);
+      }
+    });
+  }, [logos, sortBy]);
+
   const handleDelete = async (logoName: string) => {
     const confirmDelete = window.confirm(
-      `Deseja realmente excluir "${logoName}"? Esta ação não pode ser desfeita.`
+      `Deseja realmente excluir "${logoName}"? Esta ação não pode ser desfeita e será sincronizada com o GitHub.`
     );
 
     if (!confirmDelete) return;
@@ -46,7 +64,7 @@ export default function LogoManager() {
         return;
       }
 
-      setSuccess(`Logo "${logoName}" excluída com sucesso!`);
+      setSuccess(`Logo "${logoName}" excluída com sucesso! Sincronizando com GitHub...`);
       refetch();
     } catch {
       setError("Erro ao excluir logo");
@@ -100,7 +118,7 @@ export default function LogoManager() {
         throw new Error("Erro ao enviar logo");
       }
 
-      setSuccess(`Logo "${file.name}" ${overwrite ? 'substituída' : 'enviada'} com sucesso!`);
+      setSuccess(`Logo "${file.name}" ${overwrite ? 'substituída' : 'enviada'} com sucesso! Sincronizando com GitHub...`);
       refetch();
 
       if (fileInputRef.current) {
@@ -167,7 +185,7 @@ export default function LogoManager() {
           </Button>
 
           <div className="flex items-center gap-4">
-            <div className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-medium ${isDark ? 'bg-blue-500/20 text-blue-300' : 'bg-blue-100 text-blue-700'}`}>
+            <div className={`hidden md:flex items-center gap-2 px-4 py-2 rounded-full text-xs font-medium ${isDark ? 'bg-blue-500/20 text-blue-300' : 'bg-blue-100 text-blue-700'}`}>
               <HelpCircle className="w-4 h-4" />
               Dica: O sistema aceita PNG, JPG, WEBP e SVG
             </div>
@@ -235,55 +253,74 @@ export default function LogoManager() {
         </div>
 
         <div className={`p-8 rounded-2xl shadow-2xl ${cardBg}`}>
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
             <h3 className={`text-xl font-bold ${textPrimary}`}>
               Logos Disponíveis
             </h3>
-            <span className={`text-xs font-medium px-3 py-1 rounded-full ${isDark ? 'bg-white/5 text-slate-400' : 'bg-black/5 text-slate-500'}`}>
-              {logos.filter(logo => logo.name !== "blank.png").length} arquivos
-            </span>
+            
+            <div className="flex items-center gap-2 bg-black/10 p-1 rounded-lg">
+              <button
+                onClick={() => setSortBy("name")}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${sortBy === "name" ? (isDark ? 'bg-white/10 text-white' : 'bg-white text-slate-900 shadow-sm') : (isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-700')}`}
+              >
+                <SortAsc className="w-3.5 h-3.5" />
+                A-Z
+              </button>
+              <button
+                onClick={() => setSortBy("date")}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${sortBy === "date" ? (isDark ? 'bg-white/10 text-white' : 'bg-white text-slate-900 shadow-sm') : (isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-700')}`}
+              >
+                <Clock className="w-3.5 h-3.5" />
+                Recentes
+              </button>
+            </div>
           </div>
 
-          {logos.filter(logo => logo.name !== "blank.png").length === 0 ? (
+          {sortedLogos.length === 0 ? (
             <div className="text-center py-12">
               <p className={textSecondary}>Nenhum logo disponível na pasta /logos</p>
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-              {logos
-                .filter(logo => logo.name !== "blank.png")
-                .map((logo) => (
-                  <div
-                    key={logo.name}
-                    className={`relative rounded-xl p-4 transition-all duration-300 border group flex flex-col items-center ${isDark ? 'bg-black/20 border-white/10 hover:bg-black/40 hover:border-white/30' : 'bg-white/40 border-slate-200 hover:bg-white/60 hover:border-blue-300'}`}
+              {sortedLogos.map((logo) => (
+                <div
+                  key={logo.name}
+                  className={`relative rounded-xl p-4 transition-all duration-300 border group flex flex-col items-center ${isDark ? 'bg-black/20 border-white/10 hover:bg-black/40 hover:border-white/30' : 'bg-white/40 border-slate-200 hover:bg-white/60 hover:border-blue-300'}`}
+                >
+                  <button
+                    onClick={() => handleDelete(logo.name)}
+                    title="Excluir logo"
+                    className="absolute top-2 right-2 p-2 rounded-full bg-red-500/10 text-red-500 opacity-0 group-hover:opacity-100 hover:bg-red-500 hover:text-white transition-all duration-200 z-10"
                   >
-                    <button
-                      onClick={() => handleDelete(logo.name)}
-                      title="Excluir logo"
-                      className="absolute top-2 right-2 p-2 rounded-full bg-red-500/10 text-red-500 opacity-0 group-hover:opacity-100 hover:bg-red-500 hover:text-white transition-all duration-200 z-10"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <Trash2 className="w-4 h-4" />
+                  </button>
 
-                    <div className="w-full h-32 flex items-center justify-center mb-3 bg-white/5 rounded-lg overflow-hidden">
-                      <img
-                        src={`/logos/${logo.name}`}
-                        alt={logo.name}
-                        className="max-w-full max-h-full object-contain p-2"
-                        onError={(e) => { (e.target as HTMLImageElement).src = "/logos/blank.png"; }}
-                      />
-                    </div>
-                    
-                    <div className="w-full text-center">
-                      <p className={`text-xs font-medium truncate w-full px-1 ${textPrimary}`} title={logo.name}>
-                        {logo.name}
-                      </p>
-                      <p className={`text-[10px] uppercase mt-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                  <div className="w-full h-32 flex items-center justify-center mb-3 bg-white/5 rounded-lg overflow-hidden">
+                    <img
+                      src={`/logos/${logo.name}`}
+                      alt={logo.name}
+                      className="max-w-full max-h-full object-contain p-2"
+                      onError={(e) => { (e.target as HTMLImageElement).src = "/logos/blank.png"; }}
+                    />
+                  </div>
+                  
+                  <div className="w-full text-center">
+                    <p className={`text-xs font-medium truncate w-full px-1 ${textPrimary}`} title={logo.name}>
+                      {logo.name}
+                    </p>
+                    <div className="flex items-center justify-center gap-2 mt-1">
+                      <p className={`text-[10px] uppercase ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
                         {logo.name.split('.').pop()}
                       </p>
+                      {logo.mtime && (
+                        <span className={`text-[10px] ${isDark ? 'text-slate-600' : 'text-slate-400'}`}>
+                          • {new Date(logo.mtime).toLocaleDateString('pt-BR')}
+                        </span>
+                      )}
                     </div>
                   </div>
-                ))}
+                </div>
+              ))}
             </div>
           )}
         </div>
