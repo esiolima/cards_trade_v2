@@ -23,6 +23,7 @@ export class CardGenerator extends EventEmitter {
       fs.mkdirSync(TMP_DIR, { recursive: true });
 
     if (!this.browser) {
+      console.log("Iniciando navegador Puppeteer...");
       this.browser = await puppeteer.launch({
         executablePath:
           process.env.PUPPETEER_EXECUTABLE_PATH || "/usr/bin/chromium-browser",
@@ -37,6 +38,7 @@ export class CardGenerator extends EventEmitter {
         ],
         headless: true,
       });
+      console.log("Navegador Puppeteer iniciado com sucesso.");
     }
   }
 
@@ -105,22 +107,32 @@ export class CardGenerator extends EventEmitter {
     const total = rows.length;
     let processed = 0;
 
-    fs.readdirSync(OUTPUT_DIR).forEach((file) => {
-      if (file.endsWith(".pdf") || file.endsWith(".zip")) {
-        try { fs.unlinkSync(path.join(OUTPUT_DIR, file)); } catch(e) {}
-      }
-    });
+    // Limpar output antigo
+    if (fs.existsSync(OUTPUT_DIR)) {
+      fs.readdirSync(OUTPUT_DIR).forEach((file) => {
+        if (file.endsWith(".pdf") || file.endsWith(".zip")) {
+          try { fs.unlinkSync(path.join(OUTPUT_DIR, file)); } catch(e) {}
+        }
+      });
+    }
 
-    const BATCH_SIZE = 5;
+    // Processar em lotes para aproveitar a CPU
+    const BATCH_SIZE = 3;
     for (let i = 0; i < rows.length; i += BATCH_SIZE) {
       const batch = rows.slice(i, i + BATCH_SIZE);
       await Promise.all(batch.map(async (row, index) => {
         const currentIdx = i + index;
         const tipo = this.normalizeType(row.tipo);
-        if (!tipo) return;
+        if (!tipo) {
+          console.log(`Tipo não reconhecido na linha ${currentIdx + 1}: ${row.tipo}`);
+          return;
+        }
 
         const templatePath = path.join(TEMPLATES_DIR, `${tipo}.html`);
-        if (!fs.existsSync(templatePath)) return;
+        if (!fs.existsSync(templatePath)) {
+          console.log(`Template não encontrado: ${templatePath}`);
+          return;
+        }
 
         let html = fs.readFileSync(templatePath, "utf8");
         let valorFinal = String(row.valor ?? "");
@@ -157,7 +169,7 @@ export class CardGenerator extends EventEmitter {
         const page = await this.browser!.newPage();
         try {
           await page.setViewport({ width: 700, height: 1058 });
-          await page.goto(`file://${tmpHtmlPath}`, { waitUntil: "networkidle0", timeout: 30000 });
+          await page.goto(`file://${tmpHtmlPath}`, { waitUntil: "networkidle0", timeout: 45000 });
 
           const ordemFinal = row.ordem && String(row.ordem).trim() !== "" ? String(row.ordem).trim() : String(currentIdx + 1);
           const categoriaRaw = row.categoria && String(row.categoria).trim() !== "" ? String(row.categoria).trim() : "sem-categoria";
@@ -174,6 +186,9 @@ export class CardGenerator extends EventEmitter {
           });
 
           cards.push({ id: pdfName, template: tipo, data: row });
+          console.log(`Card gerado: ${pdfName}`);
+        } catch (err) {
+          console.error(`Erro ao gerar card na linha ${currentIdx + 1}:`, err);
         } finally {
           await page.close();
         }
@@ -197,11 +212,19 @@ export class CardGenerator extends EventEmitter {
       archive.on("error", (err) => reject(err));
       archive.pipe(output);
 
-      fs.readdirSync(OUTPUT_DIR).forEach((file) => {
+      const files = fs.readdirSync(OUTPUT_DIR);
+      let added = 0;
+      files.forEach((file) => {
         if (file.endsWith(".pdf") && !file.includes("jornal_ofertas")) {
           archive.file(path.join(OUTPUT_DIR, file), { name: file });
+          added++;
         }
       });
+
+      if (added === 0) {
+        reject(new Error("Nenhum arquivo PDF encontrado para compactar."));
+        return;
+      }
 
       archive.finalize();
     });
