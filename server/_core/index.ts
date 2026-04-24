@@ -1,5 +1,6 @@
 import "dotenv/config";
 import express from "express";
+import session from "express-session"; // Adicionado para gerenciar sessões
 import { createServer } from "http";
 import net from "net";
 import path from "path";
@@ -34,6 +35,10 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 
 async function startServer() {
   const app = express();
+  
+  // --- CONFIGURAÇÃO DE SEGURANÇA PARA RAILWAY/HTTPS ---
+  app.set("trust proxy", 1); // Avisa ao servidor que ele está atrás de um proxy (Railway)
+
   const server = createServer(app);
   const io = new SocketIOServer(server, {
     cors: {
@@ -41,12 +46,30 @@ async function startServer() {
       methods: ["GET", "POST"],
     },
   });
-  // Configure body parser with larger size limit for file uploads
+
+  // Configure body parser
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
-  // OAuth callback under /api/oauth/callback
+
+  // --- CONFIGURAÇÃO DA SESSÃO (CORREÇÃO DO ERRO) ---
+  app.use(
+    session({
+      secret: process.env.SESSION_SECRET || "uma-chave-secreta-muito-forte",
+      resave: false,
+      saveUninitialized: false,
+      proxy: true, // Necessário para Railway
+      cookie: {
+        secure: true, // Obrigatório para HTTPS/Railway
+        sameSite: "none", // Permite que o cookie funcione em domínios diferentes
+        maxAge: 1000 * 60 * 60 * 24, // Dura 24 horas
+      },
+    })
+  );
+
+  // OAuth callback
   registerOAuthRoutes(app);
-  // tRPC API with Socket.io context
+
+  // tRPC API
   app.use(
     "/api/trpc",
     createExpressMiddleware({
@@ -58,42 +81,31 @@ async function startServer() {
   // Socket.io connection handler
   io.on("connection", (socket) => {
     console.log(`Client connected: ${socket.id}`);
-
     socket.on("join", (sessionId: string) => {
       socket.join(sessionId);
       console.log(`Client ${socket.id} joined session ${sessionId}`);
     });
-
     socket.on("disconnect", () => {
       console.log(`Client disconnected: ${socket.id}`);
     });
   });
 
-  // Setup upload route
   setupUploadRoute(app);
-  // Setup logo upload route
   setupLogoUploadRoute(app);
-  // development mode uses Vite, production mode uses static files
+
   if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);
   } else {
     serveStatic(app);
   }
 
-  // Cleanup old files on startup
-  const uploadsDir = path.resolve("uploads");
-  const outputDir = path.resolve("output");
-  const tmpDir = path.resolve("tmp");
-
-  for (const dir of [uploadsDir, outputDir, tmpDir]) {
+  // Cleanup old files
+  const directories = [path.resolve("uploads"), path.resolve("output"), path.resolve("tmp")];
+  for (const dir of directories) {
     if (fs.existsSync(dir)) {
       const files = fs.readdirSync(dir);
       for (const file of files) {
-        try {
-          fs.unlinkSync(path.join(dir, file));
-        } catch (e) {
-          // Ignore cleanup errors
-        }
+        try { fs.unlinkSync(path.join(dir, file)); } catch (e) {}
       }
     }
   }
@@ -101,13 +113,8 @@ async function startServer() {
   const preferredPort = parseInt(process.env.PORT || "3000");
   const port = await findAvailablePort(preferredPort);
 
-  if (port !== preferredPort) {
-    console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
-  }
-
   server.listen(port, () => {
-    console.log(`Server running on http://localhost:${port}/`);
-    console.log(`Socket.io ready for real-time updates`);
+    console.log(`Server running on port ${port}`);
   });
 }
 
