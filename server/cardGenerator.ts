@@ -88,7 +88,7 @@ export class CardGenerator extends EventEmitter {
   }
 
   imageToBase64(imagePath: string): string {
-    if (!imagePath || !fs.existsSync(imagePath)) return "";
+    if (!imagePath || !fs.existsSync(imagePath) || fs.lstatSync(imagePath).isDirectory()) return "";
     const ext = path.extname(imagePath).replace(".", "").toLowerCase();
     const buffer = fs.readFileSync(imagePath);
     
@@ -185,15 +185,16 @@ export class CardGenerator extends EventEmitter {
         path.join(LOGOS_DIR, logoFile)
       );
 
-      const seloBase64 = row.selo
+      const seloRaw = String(row.selo ?? "").trim().toLowerCase();
+      const seloBase64 = seloRaw
         ? this.imageToBase64(
             path.join(
               SELOS_DIR,
-              row.selo.toLowerCase() === "nova"
+              seloRaw === "nova"
                 ? "acaonova.png"
-                : row.selo.toLowerCase() === "renovada"
+                : seloRaw === "renovada"
                 ? "acaorenovada.png"
-                : ""
+                : "blank.png"
             )
           )
         : "";

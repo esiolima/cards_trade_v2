@@ -227,7 +227,7 @@ export default function CardGenerator() {
 
         <div className={`mt-16 pt-8 border-t ${borderColor} text-center`}>
           <p className={`text-sm ${textSecondary}`}>
-            Desenvolvido por Esio Lima - Versão 2.5
+            Desenvolvido por Esio Lima - Versão 2.3.1
           </p>
         </div>
       </div>
