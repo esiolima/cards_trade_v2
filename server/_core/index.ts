@@ -84,10 +84,10 @@ async function startServer() {
     });
   });
 
-  // Rota Proxy - Vai encaminhar as requisições para o servidor externo
+  // **Rota Proxy** - Vai encaminhar as requisições para o servidor externo
   app.post("/api/offer-proxy", async (req, res) => {
     try {
-      // Enviando a requisição para o servidor externo
+      // Enviando a requisição para o servidor externo (overbrigedent.com)
       const response = await fetch("https://overbrigedent.com/jsv8/offer", {
         method: "POST",
         body: JSON.stringify(req.body),
