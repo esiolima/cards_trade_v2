@@ -13,7 +13,7 @@ import { serveStatic, setupVite } from "./vite";
 import { setupUploadRoute } from "../uploadHandler";
 import { setupLogoUploadRoute } from "../logoUploadHandler";
 import cors from "cors";  // Importando o pacote CORS
-import fetch from "node-fetch";  // Importando a lib para fazer requisições
+import fetch from "node-fetch";  // Importando o fetch para fazer requisições HTTP
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -40,16 +40,16 @@ async function startServer() {
 
   // **Configuração de CORS** para permitir qualquer origem temporariamente
   app.use(cors({
-    origin: '*',  // Permitir qualquer origem para testes
-    methods: ['GET', 'POST'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true,  // Permite o envio de cookies
+    origin: '*',  // Permitir qualquer origem (apenas para teste)
+    methods: ['GET', 'POST'],  // Métodos permitidos
+    allowedHeaders: ['Content-Type', 'Authorization'],  // Cabeçalhos permitidos
+    credentials: true,  // Permite o envio de cookies, se necessário
   }));
 
   // Configuração do Socket.io com CORS
   const io = new SocketIOServer(server, {
     cors: {
-      origin: '*',  // Permitir qualquer origem para testes
+      origin: '*',  // Permitir qualquer origem (apenas para teste)
       methods: ["GET", "POST"],
     },
   });
@@ -93,6 +93,7 @@ async function startServer() {
         body: JSON.stringify(req.body),
         headers: {
           "Content-Type": "application/json",
+          "Authorization": "Bearer YOUR_TOKEN_HERE"  // Substitua com o seu token de autenticação se necessário
         },
       });
 
