@@ -99,43 +99,30 @@ export class CardGenerator extends EventEmitter {
     return `data:${mimeType};base64,${buffer.toString("base64")}`;
   }
 
-  /**
-   * Busca inteligente de logo (Melhorada):
-   * 1. Tenta o nome exato fornecido.
-   * 2. Tenta o nome sem espaços e em minúsculo com várias extensões.
-   * 3. Tenta buscar por prefixo (se o arquivo começa com o que foi digitado).
-   * 4. Retorna 'blank.png' se nada for encontrado.
-   */
   private findLogoFile(logoName: string): string {
     if (!logoName || String(logoName).trim() === "") return "blank.png";
 
     const cleanName = String(logoName).trim();
     const extensions = [".png", ".jpg", ".jpeg", ".webp", ".svg"];
 
-    // 1. Tenta o caminho exato (caso o usuário tenha digitado a extensão correta)
     if (fs.existsSync(path.join(LOGOS_DIR, cleanName))) {
       return cleanName;
     }
 
-    // 2. Tenta buscar o arquivo ignorando maiúsculas/minúsculas e espaços
     const searchName = cleanName.toLowerCase();
     const filesInLogos = fs.readdirSync(LOGOS_DIR);
 
-    // Busca por nome exato sem extensão (ex: "unilever" -> "unilever.png")
     for (const ext of extensions) {
       const target = searchName.endsWith(ext) ? searchName : searchName + ext;
       const found = filesInLogos.find(f => f.toLowerCase() === target);
       if (found) return found;
     }
 
-    // 3. BUSCA POR PREFIXO (ex: "Unileve" -> "unilever.png")
-    // Filtramos apenas arquivos de imagem válidos
     const validFiles = filesInLogos.filter(f => {
       const ext = path.extname(f).toLowerCase();
       return extensions.includes(ext);
     });
 
-    // Tenta encontrar um arquivo que COMEÇA com o que foi digitado
     const prefixMatch = validFiles.find(f => {
       const baseName = path.parse(f).name.toLowerCase();
       return baseName.startsWith(searchName);
