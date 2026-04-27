@@ -37,17 +37,18 @@ async function startServer() {
   const app = express();
   const server = createServer(app);
 
-  // Configuração do CORS para permitir apenas o frontend do Railway
+  // Configuração de CORS para permitir apenas o frontend do Railway
   app.use(cors({
     origin: 'https://cardstradev2-production.up.railway.app',  // Permitir apenas o frontend do Railway
-    methods: ["GET", "POST"], // Métodos permitidos
-    allowedHeaders: ["Content-Type", "Authorization"],  // Cabeçalhos permitidos
+    methods: ['GET', 'POST'],  // Métodos permitidos
+    allowedHeaders: ['Content-Type', 'Authorization'],  // Cabeçalhos permitidos
+    credentials: true,  // Permite o envio de cookies
   }));
 
   // Configuração do Socket.io com CORS
   const io = new SocketIOServer(server, {
     cors: {
-      origin: 'https://cardstradev2-production.up.railway.app',  // Domínio do seu frontend
+      origin: 'https://cardstradev2-production.up.railway.app',  // O domínio do frontend
       methods: ["GET", "POST"],
     },
   });
