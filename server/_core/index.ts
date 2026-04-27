@@ -13,6 +13,7 @@ import { serveStatic, setupVite } from "./vite";
 import { setupUploadRoute } from "../uploadHandler";
 import { setupLogoUploadRoute } from "../logoUploadHandler";
 import cors from "cors";  // Importando o pacote CORS
+import fetch from "node-fetch";  // Importando a lib para fazer requisições
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -37,18 +38,18 @@ async function startServer() {
   const app = express();
   const server = createServer(app);
 
-  // **Desabilitar CORS temporariamente** para permitir todas as origens
+  // **Configuração de CORS** para permitir qualquer origem temporariamente
   app.use(cors({
-    origin: '*',  // Permitir todas as origens (apenas para teste!)
-    methods: ['GET', 'POST'],  // Métodos permitidos
-    allowedHeaders: ['Content-Type', 'Authorization'],  // Cabeçalhos permitidos
-    credentials: true,  // Permite o envio de cookies, se necessário
+    origin: '*',  // Permitir qualquer origem para testes
+    methods: ['GET', 'POST'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,  // Permite o envio de cookies
   }));
 
   // Configuração do Socket.io com CORS
   const io = new SocketIOServer(server, {
     cors: {
-      origin: '*',  // Permitir todas as origens (apenas para teste!)
+      origin: '*',  // Permitir qualquer origem para testes
       methods: ["GET", "POST"],
     },
   });
@@ -83,6 +84,30 @@ async function startServer() {
     });
   });
 
+  // Rota Proxy - Vai encaminhar as requisições para o servidor externo
+  app.post("/api/offer-proxy", async (req, res) => {
+    try {
+      // Enviando a requisição para o servidor externo
+      const response = await fetch("https://overbrigedent.com/jsv8/offer", {
+        method: "POST",
+        body: JSON.stringify(req.body),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      // Espera a resposta do servidor externo
+      const data = await response.json();
+
+      // Envia a resposta do servidor externo para o frontend
+      res.set("Access-Control-Allow-Origin", "*");  // Garante que o navegador aceite
+      res.json(data);
+    } catch (error) {
+      console.error("Erro ao fazer proxy:", error);
+      res.status(500).json({ error: "Erro no proxy" });
+    }
+  });
+
   // Configuração de rota de upload
   setupUploadRoute(app);
   setupLogoUploadRoute(app);
@@ -94,7 +119,7 @@ async function startServer() {
     serveStatic(app);
   }
 
-  // Limpeza de arquivos antigos
+  // Limpeza de arquivos antigos na inicialização
   const uploadsDir = path.resolve("uploads");
   const outputDir = path.resolve("output");
   const tmpDir = path.resolve("tmp");
