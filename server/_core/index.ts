@@ -37,18 +37,18 @@ async function startServer() {
   const app = express();
   const server = createServer(app);
 
-  // Configuração de CORS para permitir apenas o frontend do Railway
+  // **Desabilitar CORS temporariamente** para permitir todas as origens
   app.use(cors({
-    origin: 'https://cardstradev2-production.up.railway.app',  // Permitir apenas o frontend do Railway
+    origin: '*',  // Permitir todas as origens (apenas para teste!)
     methods: ['GET', 'POST'],  // Métodos permitidos
     allowedHeaders: ['Content-Type', 'Authorization'],  // Cabeçalhos permitidos
-    credentials: true,  // Permite o envio de cookies
+    credentials: true,  // Permite o envio de cookies, se necessário
   }));
 
   // Configuração do Socket.io com CORS
   const io = new SocketIOServer(server, {
     cors: {
-      origin: 'https://cardstradev2-production.up.railway.app',  // O domínio do frontend
+      origin: '*',  // Permitir todas as origens (apenas para teste!)
       methods: ["GET", "POST"],
     },
   });
@@ -94,7 +94,7 @@ async function startServer() {
     serveStatic(app);
   }
 
-  // Limpeza de arquivos antigos na inicialização
+  // Limpeza de arquivos antigos
   const uploadsDir = path.resolve("uploads");
   const outputDir = path.resolve("output");
   const tmpDir = path.resolve("tmp");
@@ -114,10 +114,6 @@ async function startServer() {
 
   const preferredPort = parseInt(process.env.PORT || "3000");
   const port = await findAvailablePort(preferredPort);
-
-  if (port !== preferredPort) {
-    console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
-  }
 
   server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}/`);
