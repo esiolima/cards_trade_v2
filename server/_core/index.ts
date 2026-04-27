@@ -35,18 +35,23 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 async function startServer() {
   const app = express();
   const server = createServer(app);
+
+  // Configuração do CORS para Socket.io
   const io = new SocketIOServer(server, {
     cors: {
-      origin: "*",
+      origin: 'https://cardstradev2-production-7227.up.railway.app', // Domínio do seu frontend no Railway
       methods: ["GET", "POST"],
     },
   });
-  // Configure body parser with larger size limit for file uploads
+
+  // Configure body parser com limite maior para uploads de arquivos
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
-  // OAuth callback under /api/oauth/callback
+
+  // Registra rotas OAuth
   registerOAuthRoutes(app);
-  // tRPC API with Socket.io context
+
+  // Configuração do tRPC com Socket.io context
   app.use(
     "/api/trpc",
     createExpressMiddleware({
@@ -55,7 +60,7 @@ async function startServer() {
     })
   );
 
-  // Socket.io connection handler
+  // Conexão com o Socket.io
   io.on("connection", (socket) => {
     console.log(`Client connected: ${socket.id}`);
 
@@ -69,18 +74,18 @@ async function startServer() {
     });
   });
 
-  // Setup upload route
+  // Configuração de rota de upload
   setupUploadRoute(app);
-  // Setup logo upload route
   setupLogoUploadRoute(app);
-  // development mode uses Vite, production mode uses static files
+
+  // Modo de desenvolvimento usa Vite, produção usa arquivos estáticos
   if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);
   } else {
     serveStatic(app);
   }
 
-  // Cleanup old files on startup
+  // Limpeza de arquivos antigos na inicialização
   const uploadsDir = path.resolve("uploads");
   const outputDir = path.resolve("output");
   const tmpDir = path.resolve("tmp");
@@ -92,7 +97,7 @@ async function startServer() {
         try {
           fs.unlinkSync(path.join(dir, file));
         } catch (e) {
-          // Ignore cleanup errors
+          // Ignorar erros de limpeza
         }
       }
     }
