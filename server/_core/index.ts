@@ -12,6 +12,7 @@ import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { setupUploadRoute } from "../uploadHandler";
 import { setupLogoUploadRoute } from "../logoUploadHandler";
+import cors from "cors";  // Importando o pacote CORS
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -36,10 +37,17 @@ async function startServer() {
   const app = express();
   const server = createServer(app);
 
-  // Configuração do CORS para Socket.io
+  // Configuração do CORS para permitir apenas o frontend do Railway
+  app.use(cors({
+    origin: 'https://cardstradev2-production.up.railway.app',  // Permitir apenas o frontend do Railway
+    methods: ["GET", "POST"], // Métodos permitidos
+    allowedHeaders: ["Content-Type", "Authorization"],  // Cabeçalhos permitidos
+  }));
+
+  // Configuração do Socket.io com CORS
   const io = new SocketIOServer(server, {
     cors: {
-      origin: 'https://cardstradev2-production-7227.up.railway.app', // Domínio do seu frontend no Railway
+      origin: 'https://cardstradev2-production.up.railway.app',  // Domínio do seu frontend
       methods: ["GET", "POST"],
     },
   });
