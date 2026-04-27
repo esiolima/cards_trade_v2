@@ -59,68 +59,72 @@ function writeToLogFile(source: LogSource, entries: unknown[]) {
   trimLogFile(logPath, MAX_LOG_SIZE_BYTES);
 }
 
-function vitePluginManusDebugCollector(): Plugin {
-  return {
-    name: "manus-debug-collector",
+// =============================================================================
+// Comentando o Plugin Manus Debug Collector para desabilitar o Vite Analytics
+// =============================================================================
 
-    transformIndexHtml(html) {
-      if (process.env.NODE_ENV === "production") {
-        return html;
-      }
-      return {
-        html,
-        tags: [
-          {
-            tag: "script",
-            attrs: {
-              src: "/__manus__/debug-collector.js",
-              defer: true,
-            },
-            injectTo: "head",
-          },
-        ],
-      };
-    },
+// function vitePluginManusDebugCollector(): Plugin {
+//   return {
+//     name: "manus-debug-collector",
 
-    configureServer(server: ViteDevServer) {
-      server.middlewares.use("/__manus__/logs", (req, res, next) => {
-        if (req.method !== "POST") return next();
+//     transformIndexHtml(html) {
+//       if (process.env.NODE_ENV === "production") {
+//         return html;
+//       }
+//       return {
+//         html,
+//         tags: [
+//           {
+//             tag: "script",
+//             attrs: {
+//               src: "/__manus__/debug-collector.js",
+//               defer: true,
+//             },
+//             injectTo: "head",
+//           },
+//         ],
+//       };
+//     },
 
-        const handlePayload = (payload: any) => {
-          if (payload.consoleLogs?.length > 0) {
-            writeToLogFile("browserConsole", payload.consoleLogs);
-          }
-          if (payload.networkRequests?.length > 0) {
-            writeToLogFile("networkRequests", payload.networkRequests);
-          }
-          if (payload.sessionEvents?.length > 0) {
-            writeToLogFile("sessionReplay", payload.sessionEvents);
-          }
+//     configureServer(server: ViteDevServer) {
+//       server.middlewares.use("/__manus__/logs", (req, res, next) => {
+//         if (req.method !== "POST") return next();
 
-          res.writeHead(200, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({ success: true }));
-        };
+//         const handlePayload = (payload: any) => {
+//           if (payload.consoleLogs?.length > 0) {
+//             writeToLogFile("browserConsole", payload.consoleLogs);
+//           }
+//           if (payload.networkRequests?.length > 0) {
+//             writeToLogFile("networkRequests", payload.networkRequests);
+//           }
+//           if (payload.sessionEvents?.length > 0) {
+//             writeToLogFile("sessionReplay", payload.sessionEvents);
+//           }
 
-        let body = "";
-        req.on("data", (chunk) => (body += chunk.toString()));
-        req.on("end", () => {
-          try {
-            handlePayload(JSON.parse(body));
-          } catch (e) {
-            res.writeHead(400, { "Content-Type": "application/json" });
-            res.end(JSON.stringify({ success: false, error: String(e) }));
-          }
-        });
-      });
-    },
-  };
-}
+//           res.writeHead(200, { "Content-Type": "application/json" });
+//           res.end(JSON.stringify({ success: true }));
+//         };
+
+//         let body = "";
+//         req.on("data", (chunk) => (body += chunk.toString()));
+//         req.on("end", () => {
+//           try {
+//             handlePayload(JSON.parse(body));
+//           } catch (e) {
+//             res.writeHead(400, { "Content-Type": "application/json" });
+//             res.end(JSON.stringify({ success: false, error: String(e) }));
+//           }
+//         });
+//       });
+//     },
+//   };
+// }
 
 const plugins = [
   react(),
   tailwindcss(),
   vitePluginManusRuntime(),
-  vitePluginManusDebugCollector(),
+  // vitePluginManusDebugCollector(),  // Comentei o plugin de Vite Analytics
 ];
 
 export default defineConfig({
