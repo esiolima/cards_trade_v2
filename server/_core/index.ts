@@ -14,101 +14,106 @@ import { setupUploadRoute } from "../uploadHandler";
 import { setupLogoUploadRoute } from "../logoUploadHandler";
 
 function isPortAvailable(port: number): Promise<boolean> {
-  return new Promise(resolve => {
-    const server = net.createServer();
-    server.listen(port, () => {
-      server.close(() => resolve(true));
-    });
-    server.on("error", () => resolve(false));
-  });
+  return new Promise(resolve => {
+    const server = net.createServer();
+    server.listen(port, () => {
+      server.close(() => resolve(true));
+    });
+    server.on("error", () => resolve(false));
+  });
 }
 
 async function findAvailablePort(startPort: number = 3000): Promise<number> {
-  for (let port = startPort; port < startPort + 20; port++) {
-    if (await isPortAvailable(port)) {
-      return port;
-    }
-  }
-  throw new Error(`No available port found starting from ${startPort}`);
+  for (let port = startPort; port < startPort + 20; port++) {
+    if (await isPortAvailable(port)) {
+      return port;
+    }
+  }
+  throw new Error(`No available port found starting from ${startPort}`);
 }
 
 async function startServer() {
-  const app = express();
-  const server = createServer(app);
-  const io = new SocketIOServer(server, {
-    cors: {
-      origin: "*",
-      methods: ["GET", "POST"],
-    },
-  });
-  // Configure body parser with larger size limit for file uploads
-  app.use(express.json({ limit: "50mb" }));
-  app.use(express.urlencoded({ limit: "50mb", extended: true }));
-  // OAuth callback under /api/oauth/callback
-  registerOAuthRoutes(app);
-  // tRPC API with Socket.io context
-  app.use(
-    "/api/trpc",
-    createExpressMiddleware({
-      router: appRouter,
-      createContext: async (opts) => createContext(opts, io),
-    })
-  );
+  const app = express();
+  const server = createServer(app);
 
-  // Socket.io connection handler
-  io.on("connection", (socket) => {
-    console.log(`Client connected: ${socket.id}`);
+  // Configuração do CORS para Socket.io
+  const io = new SocketIOServer(server, {
+    cors: {
+      origin: 'https://cardstradev2-production-7227.up.railway.app', // Domínio do seu frontend no Railway
+      methods: ["GET", "POST"],
+    },
+  });
 
-    socket.on("join", (sessionId: string) => {
-      socket.join(sessionId);
-      console.log(`Client ${socket.id} joined session ${sessionId}`);
-    });
+  // Configure body parser com limite maior para uploads de arquivos
+  app.use(express.json({ limit: "50mb" }));
+  app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
-    socket.on("disconnect", () => {
-      console.log(`Client disconnected: ${socket.id}`);
-    });
-  });
+  // Registra rotas OAuth
+  registerOAuthRoutes(app);
 
-  // Setup upload route
-  setupUploadRoute(app);
-  // Setup logo upload route
-  setupLogoUploadRoute(app);
-  // development mode uses Vite, production mode uses static files
-  if (process.env.NODE_ENV === "development") {
-    await setupVite(app, server);
-  } else {
-    serveStatic(app);
-  }
+  // Configuração do tRPC com Socket.io context
+  app.use(
+    "/api/trpc",
+    createExpressMiddleware({
+      router: appRouter,
+      createContext: async (opts) => createContext(opts, io),
+    })
+  );
 
-  // Cleanup old files on startup
-  const uploadsDir = path.resolve("uploads");
-  const outputDir = path.resolve("output");
-  const tmpDir = path.resolve("tmp");
+  // Conexão com o Socket.io
+  io.on("connection", (socket) => {
+    console.log(`Client connected: ${socket.id}`);
 
-  for (const dir of [uploadsDir, outputDir, tmpDir]) {
-    if (fs.existsSync(dir)) {
-      const files = fs.readdirSync(dir);
-      for (const file of files) {
-        try {
-          fs.unlinkSync(path.join(dir, file));
-        } catch (e) {
-          // Ignore cleanup errors
-        }
-      }
-    }
-  }
+    socket.on("join", (sessionId: string) => {
+      socket.join(sessionId);
+      console.log(`Client ${socket.id} joined session ${sessionId}`);
+    });
 
-  const preferredPort = parseInt(process.env.PORT || "3000");
-  const port = await findAvailablePort(preferredPort);
+    socket.on("disconnect", () => {
+      console.log(`Client disconnected: ${socket.id}`);
+    });
+  });
 
-  if (port !== preferredPort) {
-    console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
-  }
+  // Configuração de rota de upload
+  setupUploadRoute(app);
+  setupLogoUploadRoute(app);
 
-  server.listen(port, () => {
-    console.log(`Server running on http://localhost:${port}/`);
-    console.log(`Socket.io ready for real-time updates`);
-  });
+  // Modo de desenvolvimento usa Vite, produção usa arquivos estáticos
+  if (process.env.NODE_ENV === "development") {
+    await setupVite(app, server);
+  } else {
+    serveStatic(app);
+  }
+
+  // Limpeza de arquivos antigos na inicialização
+  const uploadsDir = path.resolve("uploads");
+  const outputDir = path.resolve("output");
+  const tmpDir = path.resolve("tmp");
+
+  for (const dir of [uploadsDir, outputDir, tmpDir]) {
+    if (fs.existsSync(dir)) {
+      const files = fs.readdirSync(dir);
+      for (const file of files) {
+        try {
+          fs.unlinkSync(path.join(dir, file));
+        } catch (e) {
+          // Ignorar erros de limpeza
+        }
+      }
+    }
+  }
+
+  const preferredPort = parseInt(process.env.PORT || "3000");
+  const port = await findAvailablePort(preferredPort);
+
+  if (port !== preferredPort) {
+    console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
+  }
+
+  server.listen(port, () => {
+    console.log(`Server running on http://localhost:${port}/`);
+    console.log(`Socket.io ready for real-time updates`);
+  });
 }
 
 startServer().catch(console.error);
